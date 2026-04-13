@@ -1,0 +1,2593 @@
+# Survival Curve Fitting from Corporate Bond Prices: Complete Technical Guide
+
+**Version:** 2.0  
+**Date:** April 13, 2026  
+**Purpose:** Complete mathematical and algorithmic framework for extracting default probabilities from bond prices  
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Mathematical Foundation](#mathematical-foundation)
+3. [The Fundamental Problem](#fundamental-problem)
+4. [Survival Curve Parameterization](#survival-curve-parameterization)
+5. [Bond Pricing with Default Risk](#bond-pricing-default-risk)
+6. [Callable Bond Pricing](#callable-bond-pricing)
+7. [The Optimization Problem](#optimization-problem)
+8. [Complete Algorithm](#complete-algorithm)
+9. [Implementation Details](#implementation-details)
+10. [Validation and Quality Checks](#validation-quality-checks)
+11. [Edge Cases and Troubleshooting](#edge-cases-troubleshooting)
+12. [Production Considerations](#production-considerations)
+
+---
+
+<a name="executive-summary"></a>
+## 1. Executive Summary
+
+### What This Document Covers
+
+This document provides a complete technical specification for inferring survival curves (default probability distributions) from observable corporate bond prices. The framework handles:
+
+- **Bullet bonds** (option-free): Fast analytical pricing
+- **Callable bonds**: Tree-based option valuation
+- **Mixed portfolios**: Unified optimization across bond types
+- **Multiple issuers**: Scalable batch processing
+
+### Core Methodology
+
+```
+Observable Data:
+  ├─ Corporate bond prices (market)
+  ├─ Bond characteristics (coupon, maturity, callability)
+  └─ Risk-free rates (Treasury curve)
+
+↓ Optimization Process ↓
+
+Fitted Output:
+  └─ Survival curve Q(t; θ*) parameterized by θ* = [λ₀, λ₁, β]
+
+Applications:
+  ├─ Default probability forecasting
+  ├─ Credit spread calculation
+  ├─ Relative value signal generation
+  └─ Risk management
+```
+
+### Key Innovation
+
+A **unified optimization framework** that simultaneously fits survival curves to both bullet and callable bonds without requiring separate workflows. The algorithm automatically routes bond pricing to the appropriate method (analytical vs. tree) while maintaining a single optimization loop.
+
+---
+
+<a name="mathematical-foundation"></a>
+## 2. Mathematical Foundation
+
+### 2.1 Survival Probability and Hazard Rates
+
+**Survival probability** Q(t) is the probability that an issuer does not default before time t:
+
+```
+Q(t) = P(τ > t)
+```
+
+where τ is the random time of default.
+
+**Hazard rate** λ(t) is the instantaneous default intensity:
+
+```
+λ(t) = lim[dt→0] P(t < τ ≤ t + dt | τ > t) / dt
+```
+
+**Relationship between Q(t) and λ(t):**
+
+```
+Q(t) = exp[-∫₀ᵗ λ(s)ds]
+
+or equivalently:
+
+λ(t) = -d[ln Q(t)]/dt
+```
+
+**Default probability by time t:**
+
+```
+P(τ ≤ t) = 1 - Q(t)
+```
+
+### 2.2 Cumulative Hazard Function
+
+Define Λ(t) as the cumulative hazard:
+
+```
+Λ(t) = ∫₀ᵗ λ(s)ds
+```
+
+Then:
+
+```
+Q(t) = exp[-Λ(t)]
+```
+
+### 2.3 Recovery Assumption
+
+When default occurs, bondholders recover a fraction ℜ of face value. Standard recovery rates:
+
+| Seniority | Recovery Rate ℜ |
+|-----------|----------------|
+| Senior Secured | 50% |
+| Senior Unsecured | 40% (default) |
+| Subordinated | 30% |
+| Junior | 20% |
+
+### 2.4 Risk-Free Discounting
+
+**Discount factor** B(t) represents the present value of $1 received at time t under no default risk:
+
+```
+B(t) = exp[-∫₀ᵗ r(s)ds]
+```
+
+where r(s) is the instantaneous risk-free rate (forward rate).
+
+For constant rate r:
+```
+B(t) = exp(-r × t)
+```
+
+### 2.5 Expected Loss
+
+**Expected loss** Ξ(T) is the present value of losses due to default by time T:
+
+```
+Ξ(T) = ∫₀ᵀ B(t)dQ(t)
+```
+
+This represents:
+- Integration over all possible default times t ∈ [0, T]
+- At each time t, loss is discounted by B(t)
+- Probability density of default at t is dQ(t) = -Q'(t)dt
+
+**Discrete approximation:**
+
+```
+Ξ(T) ≈ Σᵢ B(tᵢ) × [Q(tᵢ₋₁) - Q(tᵢ)]
+```
+
+where {t₀, t₁, ..., tₙ} is a grid with t₀ = 0 and tₙ = T.
+
+### 2.6 Risky PV01
+
+**Risky PV01** Π(T) is the present value of $1 per year paid continuously from 0 to T, conditional on survival:
+
+```
+Π(T) = ∫₀ᵀ B(t)Q(t)dt
+```
+
+This represents the risky duration of a bond with maturity T.
+
+**Discrete approximation (trapezoid rule):**
+
+```
+Π(T) ≈ Σᵢ₌₁ⁿ [(B(tᵢ₋₁)Q(tᵢ₋₁) + B(tᵢ)Q(tᵢ))/2] × Δtᵢ
+```
+
+where Δtᵢ = tᵢ - tᵢ₋₁.
+
+### 2.7 Risky-Weighted Forward Rate
+
+**Risky-weighted forward rate** r_b(T) is the average forward rate weighted by risky discounting:
+
+```
+r_b(T) = [∫₀ᵀ f(t)B(t)Q(t)dt] / Π(T)
+```
+
+where f(t) is the instantaneous forward rate at time t.
+
+### 2.8 Fundamental Parity Equation
+
+The following identity must hold for any valid survival curve and risk-free curve:
+
+```
+B(T)Q(T) + Ξ(T) + r_b(T)Π(T) = 1
+```
+
+**Interpretation:**
+- B(T)Q(T): PV of $1 received at T if no default
+- Ξ(T): PV of expected losses
+- r_b(T)Π(T): PV of interest earned on risky cash flows
+
+**This equation is a critical validation check** — any fitted curve must satisfy this identity to within numerical precision (typically 10⁻⁶).
+
+---
+
+<a name="fundamental-problem"></a>
+## 3. The Fundamental Problem
+
+### 3.1 The Inverse Problem
+
+**Forward Problem (Easy):**
+
+Given: Survival curve Q(t) and bond characteristics  
+Find: Theoretical bond price P
+
+**Inverse Problem (What We Need):**
+
+Given: Observable bond prices {P₁, P₂, ..., Pₙ} and bond characteristics  
+Find: Survival curve Q(t) that explains these prices
+
+### 3.2 Why This is Challenging
+
+**Underdetermined System:**
+
+Each bond gives one equation:
+```
+Pᵢ = f(Q(t), couponᵢ, maturityᵢ, ...)
+```
+
+But Q(t) is a **continuous function**. We have finite equations but infinite unknowns.
+
+**Solution:** Parameterize Q(t) with a small number of parameters θ, reducing to a finite-dimensional problem.
+
+### 3.3 Additional Complexity for Callables
+
+For callable bonds, the pricing equation becomes:
+
+```
+Pᵢ = f(Q(t), couponᵢ, maturityᵢ, call_scheduleᵢ, rate_volatility, ...)
+```
+
+The call option introduces:
+- **Path dependency**: Bond value depends on interest rate trajectory
+- **Early exercise**: Optimal call timing depends on future bond values
+- **Nonlinearity**: Price is kinked at call price
+
+This requires numerical methods (trees or Monte Carlo) rather than closed-form solutions.
+
+---
+
+<a name="survival-curve-parameterization"></a>
+## 4. Survival Curve Parameterization
+
+### 4.1 Exponential Hazard Rate Model
+
+We parameterize the hazard rate as:
+
+```
+λ(t; θ) = λ₀ + λ₁ × exp(-β × t)
+```
+
+where θ = [λ₀, λ₁, β] are the parameters to be estimated.
+
+**Parameter interpretation:**
+
+- **λ₀** ≥ 0: Long-term (asymptotic) hazard rate floor
+- **λ₁**: Short-term hazard adjustment (can be positive or negative)
+  - λ₁ > 0: Higher short-term risk (inverted credit curve)
+  - λ₁ < 0: Lower short-term risk (upward-sloping credit curve)
+- **β** > 0: Decay rate controlling speed of transition from short to long term
+  - Half-life ≈ ln(2)/β
+  - β = 0.35 → half-life ≈ 2 years
+
+**Cumulative hazard:**
+
+```
+Λ(t; θ) = ∫₀ᵗ λ(s; θ)ds
+        = ∫₀ᵗ [λ₀ + λ₁ exp(-β s)]ds
+        = λ₀ × t + (λ₁/β) × [1 - exp(-β t)]
+```
+
+**Survival probability:**
+
+```
+Q(t; θ) = exp[-Λ(t; θ)]
+        = exp{-λ₀ t - (λ₁/β)[1 - exp(-β t)]}
+```
+
+### 4.2 Properties of This Parameterization
+
+**Asymptotic behavior:**
+
+As t → ∞:
+```
+λ(t; θ) → λ₀
+Q(t; θ) → exp(-λ₀ t)
+```
+
+**Initial behavior:**
+
+At t = 0:
+```
+λ(0; θ) = λ₀ + λ₁
+Q(0; θ) = 1  (no default at time zero by definition)
+```
+
+**Monotonicity:**
+
+Q(t; θ) is always decreasing (survival probability cannot increase over time), provided that λ(t; θ) > 0 for all t.
+
+**Constraint:** We require λ₀ + λ₁ exp(-β t) > 0 for all t ≥ 0.
+
+Sufficient condition: λ₀ + λ₁ ≥ 0
+
+### 4.3 Parameter Bounds
+
+For optimization, we impose:
+
+```
+λ₀ ∈ [10⁻⁵, 0.5]     (0.001% to 50% annual default rate at long term)
+λ₁ ∈ [-1.0, 1.0]       (allow inversion or steep term structure)
+β  ∈ [0.01, 10.0]      (0.07 to 70 year half-life)
+```
+
+### 4.4 Alternative Parameterizations
+
+**Nelson-Siegel-Svensson (NSS):**
+
+```
+λ(t) = β₀ + β₁ exp(-t/τ₁) + β₂(t/τ₁)exp(-t/τ₁) + β₃(t/τ₂)exp(-t/τ₂)
+```
+
+More flexible (6 parameters) but more prone to overfitting.
+
+**Piecewise constant:**
+
+```
+λ(t) = λᵢ  for tᵢ₋₁ ≤ t < tᵢ
+```
+
+Simple but non-smooth. Good for discrete CDS quotes.
+
+**Polynomial:**
+
+```
+λ(t) = Σᵢ aᵢ tⁱ
+```
+
+Can produce negative hazard rates; not recommended.
+
+**For this framework, we use the exponential model** as it:
+- Has economic interpretation
+- Ensures positive hazard rates
+- Fits most term structures well
+- Uses only 3 parameters (avoids overfitting with small bond counts)
+
+---
+
+<a name="bond-pricing-default-risk"></a>
+## 5. Bond Pricing with Default Risk
+
+### 5.1 Analytical Pricing for Bullet Bonds
+
+For an **option-free** (bullet) bond with:
+- Maturity T
+- Annual coupon rate c (paid with frequency f, e.g., f=2 for semi-annual)
+- Face value normalized to 100
+
+**Coupon Payment Present Value:**
+
+```
+PV_coupons = Σᵢ₌₁ⁿ (c/f) × B(tᵢ) × Q(tᵢ; θ)
+```
+
+where:
+- n = T × f (number of coupon payments)
+- tᵢ = i/f (time of i-th coupon payment)
+- c/f = coupon payment per period
+
+**Principal Payment Present Value:**
+
+```
+PV_principal = 100 × B(T) × Q(T; θ)
+```
+
+**Recovery Value Present Value:**
+
+```
+PV_recovery = ℜ × Ξ(T; θ)
+             = ℜ × ∫₀ᵀ B(t)dQ(t; θ)
+```
+
+This is the expected recovery if default occurs before T.
+
+**Total Bond Price (per $100 face):**
+
+```
+P(θ) = PV_coupons + PV_principal + PV_recovery
+
+     = Σᵢ₌₁ⁿ (c/f) B(tᵢ)Q(tᵢ; θ) + 100 B(T)Q(T; θ) + ℜ Ξ(T; θ)
+```
+
+### 5.2 Discrete Approximation for Expected Loss
+
+The continuous integral Ξ(T) is approximated using a fine time grid:
+
+```
+Ξ(T; θ) ≈ Σⱼ₌₁ᵐ B(τⱼ) × [Q(τⱼ₋₁; θ) - Q(τⱼ; θ)]
+```
+
+where {τ₀, τ₁, ..., τₘ} is a grid with τ₀ = 0, τₘ = T.
+
+**Grid spacing:** Quarterly intervals (Δτ = 0.25 years) provide good accuracy.
+
+**Midpoint approximation** (alternative):
+
+```
+Ξ(T; θ) ≈ Σⱼ₌₁ᵐ B((τⱼ₋₁ + τⱼ)/2) × [Q(τⱼ₋₁; θ) - Q(τⱼ; θ)]
+```
+
+This is more accurate for the same grid spacing.
+
+### 5.3 Implementation: Analytical Bond Pricing
+
+```python
+def price_bond_analytical(bond, theta, rf_curve, recovery=0.40):
+    """
+    Price option-free bond with default risk.
+    
+    Parameters:
+    -----------
+    bond : Bond object
+        Contains maturity, coupon, frequency
+    theta : np.ndarray
+        [lambda_0, lambda_1, beta]
+    rf_curve : RiskFreeCurve object
+        Provides B(t) = discount_factor(t)
+    recovery : float
+        Recovery rate (0 to 1)
+    
+    Returns:
+    --------
+    price : float
+        Bond price per $100 face value
+    """
+    T = bond.maturity
+    c = bond.coupon / 100  # Convert to decimal
+    f = bond.coupon_frequency  # 2 for semi-annual
+    
+    # === COUPON PV ===
+    n_payments = int(T * f)
+    coupon_pv = 0.0
+    
+    for i in range(1, n_payments + 1):
+        t = i / f
+        B_t = rf_curve.discount_factor(t)
+        Q_t = survival_prob(t, theta)
+        coupon_pv += (c / f) * B_t * Q_t
+    
+    # === PRINCIPAL PV ===
+    B_T = rf_curve.discount_factor(T)
+    Q_T = survival_prob(T, theta)
+    principal_pv = B_T * Q_T
+    
+    # === RECOVERY PV ===
+    # Use quarterly grid for expected loss calculation
+    m = int(T * 4) + 1
+    tau_grid = np.linspace(0, T, m)
+    
+    expected_loss = 0.0
+    for j in range(1, m):
+        tau_mid = (tau_grid[j-1] + tau_grid[j]) / 2
+        B_mid = rf_curve.discount_factor(tau_mid)
+        Q_prev = survival_prob(tau_grid[j-1], theta)
+        Q_curr = survival_prob(tau_grid[j], theta)
+        dQ = Q_prev - Q_curr  # Positive (Q decreasing)
+        expected_loss += B_mid * dQ
+    
+    recovery_pv = recovery * expected_loss
+    
+    # === TOTAL PRICE ===
+    price = (coupon_pv + principal_pv + recovery_pv) * 100
+    
+    return price
+
+
+def survival_prob(t, theta):
+    """
+    Calculate Q(t; θ) from exponential hazard model.
+    
+    Q(t) = exp[-λ₀ t - (λ₁/β)(1 - exp(-β t))]
+    """
+    lambda_0, lambda_1, beta = theta
+    
+    if t <= 0:
+        return 1.0
+    
+    cum_hazard = lambda_0 * t + (lambda_1 / beta) * (1 - np.exp(-beta * t))
+    
+    return np.exp(-cum_hazard)
+```
+
+### 5.4 Computational Efficiency
+
+**Analytical pricing complexity:** O(T × f + T × 4) ≈ O(T)
+
+For a 10-year semi-annual bond:
+- 20 coupon calculations
+- 40 expected loss grid points
+- Total: ~60 function evaluations
+
+**Time:** < 1 millisecond per bond on modern hardware
+
+---
+
+<a name="callable-bond-pricing"></a>
+## 6. Callable Bond Pricing
+
+### 6.1 The Call Option Problem
+
+A **callable bond** gives the issuer the right to redeem the bond early at a specified **call price** K(t) at time t.
+
+**Issuer's optimal strategy:** Call when bond value exceeds call price.
+
+**Bondholder's perspective:**
+```
+Callable Bond Value = Option-Free Bond Value - Call Option Value
+```
+
+The call option is **owned by the issuer**, so it reduces the bond's value to the holder.
+
+### 6.2 Why Trees Are Necessary
+
+**Path dependency:** The decision to call depends on:
+- Interest rate level at call date
+- Credit spread at call date  
+- Bond value at call date (which depends on future rates and survival)
+
+**Forward-looking optimization:** At each potential call date, issuer compares:
+- Continuation value: What bond is worth if it continues
+- Call price: What issuer pays to redeem
+
+This requires modeling **multiple scenarios** for rates and survival.
+
+### 6.3 Binomial Tree Structure
+
+**Time discretization:**
+
+Divide [0, T] into n steps: t₀ = 0, t₁, t₂, ..., tₙ = T
+
+Step size: Δt = T/n
+
+**State space:**
+
+At time step i, there are i+1 possible states (nodes):
+- Node (i, j) represents state j at time i
+- j = 0 (highest rate), 1, 2, ..., i (lowest rate)
+
+**Tree dimensions:**
+- Time steps: n + 1 levels
+- Total nodes: 1 + 2 + 3 + ... + (n+1) = (n+1)(n+2)/2
+
+For n = 40 (10 years, quarterly): ~860 nodes
+
+### 6.4 Interest Rate Tree
+
+We model risk-free rates using a recombining binomial tree.
+
+**Hull-White one-factor model:**
+
+```
+dr(t) = [θ(t) - α r(t)]dt + σ dW(t)
+```
+
+where:
+- α = mean reversion speed
+- σ = volatility
+- θ(t) = drift function calibrated to match risk-free curve
+
+**Simplified approach (used here):**
+
+Assume rates follow the risk-free curve on average with volatility σ:
+
+At node (i, j):
+```
+r(i, j) = f(tᵢ) + σ√Δt × (2j - i)
+```
+
+where f(tᵢ) is the forward rate from the risk-free curve.
+
+**Up and down movements:**
+
+```
+r(i+1, j)   = r(i, j) + σ√Δt    (down move in rate)
+r(i+1, j+1) = r(i, j) - σ√Δt    (up move in rate)
+```
+
+**Transition probabilities:**
+
+Assume risk-neutral measure with equal probabilities:
+```
+P(up) = P(down) = 0.5
+```
+
+### 6.5 Survival Probability Tree
+
+At each node (i, j), we need Q(tᵢ) = probability of survival to time tᵢ.
+
+**Key simplification:** Survival probability depends only on time, not on interest rate state.
+
+```
+Q(i, j) = Q(tᵢ; θ) = survival_prob(tᵢ, theta)
+```
+
+This assumes **independence** between interest rate movements and credit events, which is a standard simplification.
+
+**Refinement (if needed):** Allow correlation between rates and credit:
+```
+λ(t, r) = λ₀(r) + λ₁ exp(-β t)
+```
+
+where λ₀ depends on interest rate level. This adds significant complexity.
+
+### 6.6 Bond Valuation on Tree (Backward Induction)
+
+**Terminal condition (at maturity T = tₙ):**
+
+For all states j at time n:
+```
+V(n, j) = 100 + (c/f)    (final coupon + principal, if survived)
+```
+
+**Backward recursion (for i = n-1, n-2, ..., 0):**
+
+At node (i, j):
+
+1. **Calculate expected continuation value:**
+
+```
+E[V(i+1) | i, j] = 0.5 × V(i+1, j) + 0.5 × V(i+1, j+1)
+```
+
+(Averaging over next period's up and down states)
+
+2. **Discount to present:**
+
+```
+r_node = r(i, j)
+df = exp(-r_node × Δt)
+```
+
+3. **Account for survival:**
+
+```
+Q_now = Q(i, j)
+Q_next_avg = 0.5 × [Q(i+1, j) + Q(i+1, j+1)]
+
+survival_prob = Q_next_avg / Q_now    (conditional on having survived to i)
+default_prob = 1 - survival_prob
+```
+
+4. **Calculate expected value:**
+
+```
+coupon = (c/f)  if coupon date, else 0
+
+continuation_value = E[V(i+1) | i, j]
+
+value_if_no_default = df × (coupon + continuation_value)
+value_if_default = df × (recovery × 100)
+
+expected_value = survival_prob × value_if_no_default 
+               + default_prob × value_if_default
+```
+
+5. **Check for call:**
+
+If time tᵢ is a call date with call price K(tᵢ):
+
+```
+if continuation_value > K(tᵢ):
+    # Issuer calls (rational to redeem at K rather than let bond continue at higher value)
+    V(i, j) = df × K(tᵢ)
+else:
+    # No call
+    V(i, j) = expected_value
+```
+
+6. **Set node value:**
+
+```
+V(i, j) = min(expected_value, df × K(tᵢ))    if callable at tᵢ
+V(i, j) = expected_value                      otherwise
+```
+
+**Bond price today:**
+
+```
+P_callable = V(0, 0)
+```
+
+### 6.7 Implementation: Tree Pricing
+
+```python
+def price_bond_tree(bond, theta, rf_curve, recovery=0.40, n_steps=40, rate_vol=0.01):
+    """
+    Price callable bond using binomial tree.
+    
+    Parameters:
+    -----------
+    bond : Bond object
+        Contains maturity, coupon, call_schedule
+    theta : np.ndarray
+        Survival curve parameters
+    rf_curve : RiskFreeCurve
+    recovery : float
+    n_steps : int
+        Number of time steps in tree
+    rate_vol : float
+        Interest rate volatility (annualized)
+    
+    Returns:
+    --------
+    price : float
+        Callable bond price per $100 face
+    """
+    T = bond.maturity
+    c = bond.coupon / 100
+    f = bond.coupon_frequency
+    dt = T / n_steps
+    
+    # Build interest rate tree
+    rate_tree = np.zeros((n_steps + 1, n_steps + 1))
+    
+    for i in range(n_steps + 1):
+        t = i * dt
+        f_t = rf_curve.forward_rate(t)
+        
+        for j in range(i + 1):
+            # j=0 is highest rate, j=i is lowest rate
+            rate_tree[i, j] = f_t + rate_vol * np.sqrt(dt) * (i - 2*j)
+    
+    # Build survival probability tree
+    survival_tree = np.zeros((n_steps + 1, n_steps + 1))
+    
+    for i in range(n_steps + 1):
+        t = i * dt
+        Q_t = survival_prob(t, theta)
+        
+        for j in range(i + 1):
+            survival_tree[i, j] = Q_t
+    
+    # Initialize value tree
+    value_tree = np.zeros((n_steps + 1, n_steps + 1))
+    
+    # Terminal values
+    terminal_coupon = (c / f) if (n_steps / f) == int(n_steps / f) else 0
+    
+    for j in range(n_steps + 1):
+        value_tree[n_steps, j] = 100 + terminal_coupon
+    
+    # Backward induction
+    for i in range(n_steps - 1, -1, -1):
+        time = i * dt
+        
+        # Check if coupon payment at this time
+        is_coupon_date = abs(time - round(time * f) / f) < dt / 2
+        coupon_payment = (c / f) if is_coupon_date else 0
+        
+        # Check if call date
+        call_price = get_call_price(bond.call_schedule, time, dt)
+        
+        for j in range(i + 1):
+            # Current survival probability
+            Q_now = survival_tree[i, j]
+            
+            # Next period survival (average of up and down)
+            Q_next_down = survival_tree[i + 1, j]
+            Q_next_up = survival_tree[i + 1, min(j + 1, i + 1)]
+            Q_next_avg = 0.5 * (Q_next_down + Q_next_up)
+            
+            # Conditional survival probability
+            surv_prob = Q_next_avg / Q_now if Q_now > 0 else 0
+            def_prob = 1 - surv_prob
+            
+            # Expected continuation value
+            cont_value = 0.5 * (value_tree[i + 1, j] + value_tree[i + 1, min(j + 1, i + 1)])
+            
+            # Discount factor
+            r_node = rate_tree[i, j]
+            df = np.exp(-r_node * dt)
+            
+            # Expected value
+            value_no_default = df * (coupon_payment + cont_value)
+            value_default = df * (recovery * 100)
+            
+            expected_value = surv_prob * value_no_default + def_prob * value_default
+            
+            # Apply call constraint
+            if call_price is not None:
+                if cont_value > call_price:
+                    # Issuer calls
+                    value_tree[i, j] = df * call_price
+                else:
+                    value_tree[i, j] = expected_value
+            else:
+                value_tree[i, j] = expected_value
+    
+    price = value_tree[0, 0]
+    
+    return price
+
+
+def get_call_price(call_schedule, time, dt):
+    """
+    Get call price at given time if callable.
+    
+    call_schedule: List of (call_time, call_price) tuples
+    
+    Returns call_price if within dt of a call date, else None.
+    """
+    if call_schedule is None:
+        return None
+    
+    for call_time, call_price in call_schedule:
+        if abs(time - call_time) < dt / 2:
+            return call_price
+    
+    return None
+```
+
+### 6.8 Computational Complexity
+
+**Tree pricing complexity:** O(n²)
+
+For n = 40 steps:
+- ~860 nodes
+- ~3 operations per node
+- Total: ~2,500 operations
+
+**Time:** ~10-50 milliseconds per bond (10-50× slower than analytical)
+
+**Optimization impact:** If fitting with 5 callable bonds and 100 iterations:
+- Analytical only: ~0.5 seconds
+- With tree pricing: ~25 seconds
+
+This is why we use analytical pricing for bullets when possible.
+
+---
+
+<a name="optimization-problem"></a>
+## 7. The Optimization Problem
+
+### 7.1 Problem Formulation
+
+**Objective:** Find θ* that minimizes pricing errors across all bonds.
+
+**Mathematical statement:**
+
+```
+θ* = argmin_θ Σᵢ₌₁ⁿ [P_model(bᵢ; θ) - P_market(bᵢ)]²
+```
+
+subject to:
+```
+λ₀ ∈ [10⁻⁵, 0.5]
+λ₁ ∈ [-1.0, 1.0]
+β  ∈ [0.01, 10.0]
+λ₀ + λ₁ ≥ 0    (ensure positive hazard rates)
+```
+
+where:
+- n = number of bonds for the issuer
+- bᵢ = i-th bond with characteristics (coupon, maturity, callability, etc.)
+- P_model(bᵢ; θ) = model price given parameters θ
+- P_market(bᵢ) = observed market price
+
+### 7.2 Objective Function Structure
+
+Define residual function:
+
+```
+r(θ) = [r₁(θ), r₂(θ), ..., rₙ(θ)]ᵀ
+
+where rᵢ(θ) = P_model(bᵢ; θ) - P_market(bᵢ)
+```
+
+**Least squares objective:**
+
+```
+F(θ) = ||r(θ)||² = Σᵢ rᵢ(θ)²
+```
+
+**Root mean squared error (RMSE):**
+
+```
+RMSE(θ) = √[F(θ)/n]
+```
+
+### 7.3 Model Pricing Function
+
+```
+P_model(bᵢ; θ) = {
+    P_analytical(bᵢ; θ)    if bond i is option-free
+    P_tree(bᵢ; θ)          if bond i has embedded options
+}
+```
+
+This is the **key abstraction** that enables unified optimization.
+
+### 7.4 Gradient Information
+
+The objective function F(θ) is:
+- **Continuous** in θ (small changes in θ → small changes in prices)
+- **Differentiable** for analytical pricing
+- **Non-differentiable** for tree pricing (due to call boundaries)
+
+**Jacobian for analytical pricing:**
+
+Can be computed via automatic differentiation or finite differences.
+
+**Jacobian for tree pricing:**
+
+Not well-defined at call boundaries. Use finite differences or treat as black-box.
+
+### 7.5 Optimization Algorithm: Trust-Region Reflective
+
+We use **scipy.optimize.least_squares** with method='trf' (Trust-Region Reflective).
+
+**Why this algorithm:**
+
+1. **Handles bounds naturally:** Box constraints on θ enforced exactly
+2. **Robust to non-differentiability:** Works with finite-difference Jacobian
+3. **Efficient for small problems:** 3 parameters, typically 3-10 bonds
+4. **Damping:** Trust region prevents divergence from bad steps
+
+**Algorithm sketch:**
+
+```
+1. Start with θ₀ (initial guess)
+2. Build local quadratic model of F(θ) around current θ
+3. Solve trust-region subproblem:
+   min_δ  m(δ) = F(θ) + g'δ + ½δ'Hδ
+   subject to ||δ|| ≤ Δ  (trust region radius)
+              θ + δ within bounds
+   
+4. Evaluate F(θ + δ)
+5. Update trust region radius Δ based on model accuracy
+6. If improvement sufficient, accept step: θ ← θ + δ
+7. Repeat until convergence
+```
+
+**Convergence criteria:**
+
+```
+||r(θ)|| < ftol           (small residuals)
+||δ|| < xtol              (small step size)
+||g|| < gtol              (small gradient)
+max_nfev reached          (iteration limit)
+```
+
+Standard values:
+- ftol = 1e-8
+- xtol = 1e-8  
+- gtol = 1e-8
+- max_nfev = 200
+
+### 7.6 Initial Guess Strategy
+
+**Good initial guess is critical** for nonlinear optimization.
+
+**Strategy:**
+
+1. **Identify longest-maturity, non-callable bond** (if available)
+
+2. **Estimate default probability:**
+
+```
+Assume bond trades at discount due to credit risk:
+PD_implied ≈ max(0.01, min(0.99, (100 - P_market) / 100))
+```
+
+3. **Back out λ₀:**
+
+```
+Q(T) ≈ 1 - PD_implied
+Q(T) = exp(-λ₀ T)  (assuming constant hazard)
+
+λ₀ ≈ -ln(1 - PD_implied) / T
+```
+
+4. **Set other parameters:**
+
+```
+λ₁ = 0.5 × λ₀     (assume short-term risk 50% higher)
+β = ln(2) / 2     (assume 2-year half-life ≈ 0.35)
+```
+
+**Example:**
+
+Bond: 10Y maturity, price = 95.0
+
+```
+PD_implied = (100 - 95) / 100 = 0.05 = 5%
+λ₀ = -ln(0.95) / 10 = 0.00513 ≈ 0.005
+λ₁ = 0.5 × 0.005 = 0.0025
+β = 0.35
+
+θ₀ = [0.005, 0.0025, 0.35]
+```
+
+### 7.7 Multiple Initial Guesses
+
+For robustness, try several initial guesses and select best fit:
+
+```python
+initial_guesses = [
+    [0.01, 0.005, 0.35],    # Low default risk
+    [0.02, 0.010, 0.35],    # Medium default risk
+    [0.05, 0.025, 0.35],    # High default risk
+    [0.02, 0.010, 0.70],    # Medium risk, fast mean reversion
+    [0.02, 0.010, 0.15],    # Medium risk, slow mean reversion
+]
+
+best_result = None
+best_rmse = float('inf')
+
+for theta_0 in initial_guesses:
+    result = least_squares(objective, theta_0, bounds=bounds)
+    
+    if result.success and result.rmse < best_rmse:
+        best_result = result
+        best_rmse = result.rmse
+
+theta_optimal = best_result.x
+```
+
+---
+
+<a name="complete-algorithm"></a>
+## 8. Complete Algorithm
+
+### 8.1 Algorithm Overview
+
+```
+INPUT:
+  - List of bonds for issuer: {b₁, b₂, ..., bₙ}
+  - Risk-free curve: rf_curve
+  - Recovery rate: ℜ (default 0.40)
+
+OUTPUT:
+  - Fitted survival curve parameters: θ* = [λ₀, λ₁, β]
+  - Fit quality metrics: RMSE, residuals
+
+ALGORITHM:
+  1. Validate input data
+  2. Generate initial guess θ₀
+  3. Define objective function r(θ)
+  4. Run constrained optimization
+  5. Validate fitted curve
+  6. Return results
+```
+
+### 8.2 Detailed Algorithm Steps
+
+**STEP 1: Validate Input Data**
+
+```python
+def validate_bonds(bonds):
+    """
+    Check bond data quality.
+    """
+    if len(bonds) < 3:
+        raise ValueError(f"Need at least 3 bonds, have {len(bonds)}")
+    
+    for bond in bonds:
+        if bond.maturity <= 0:
+            raise ValueError(f"Invalid maturity: {bond.maturity}")
+        
+        if bond.coupon < 0:
+            raise ValueError(f"Invalid coupon: {bond.coupon}")
+        
+        if bond.price <= 0 or bond.price > 200:
+            raise ValueError(f"Suspicious price: {bond.price}")
+        
+        if bond.callable and bond.call_schedule is None:
+            raise ValueError(f"Callable bond missing call schedule")
+    
+    return True
+```
+
+**STEP 2: Generate Initial Guess**
+
+```python
+def initial_guess(bonds, rf_curve):
+    """
+    Generate θ₀ from bond data.
+    """
+    # Find longest non-callable bond
+    non_callable = [b for b in bonds if not b.callable]
+    
+    if non_callable:
+        reference_bond = max(non_callable, key=lambda b: b.maturity)
+    else:
+        reference_bond = max(bonds, key=lambda b: b.maturity)
+    
+    T = reference_bond.maturity
+    P = reference_bond.price
+    
+    # Estimate default probability
+    PD_est = max(0.01, min(0.99, (100 - P) / 100))
+    
+    # Estimate λ₀
+    lambda_0 = -np.log(1 - PD_est) / T
+    lambda_0 = np.clip(lambda_0, 0.001, 0.1)
+    
+    # Set λ₁ and β
+    lambda_1 = 0.5 * lambda_0
+    beta = np.log(2) / 2  # 2-year half-life
+    
+    theta_0 = np.array([lambda_0, lambda_1, beta])
+    
+    return theta_0
+```
+
+**STEP 3: Define Objective Function**
+
+```python
+def create_objective_function(bonds, rf_curve, recovery):
+    """
+    Return objective function r(θ) for optimization.
+    """
+    def objective(theta):
+        """
+        Calculate residuals for all bonds.
+        """
+        residuals = []
+        
+        for bond in bonds:
+            # Price bond with current theta
+            if bond.callable or bond.puttable:
+                model_price = price_bond_tree(bond, theta, rf_curve, recovery)
+            else:
+                model_price = price_bond_analytical(bond, theta, rf_curve, recovery)
+            
+            # Calculate error
+            market_price = bond.price
+            residual = model_price - market_price
+            
+            residuals.append(residual)
+        
+        return np.array(residuals)
+    
+    return objective
+```
+
+**STEP 4: Run Optimization**
+
+```python
+def optimize_survival_curve(objective, theta_0, bounds):
+    """
+    Run constrained least-squares optimization.
+    """
+    from scipy.optimize import least_squares
+    
+    result = least_squares(
+        fun=objective,
+        x0=theta_0,
+        bounds=(
+            [bounds['lambda_0'][0], bounds['lambda_1'][0], bounds['beta'][0]],
+            [bounds['lambda_0'][1], bounds['lambda_1'][1], bounds['beta'][1]]
+        ),
+        method='trf',
+        ftol=1e-8,
+        xtol=1e-8,
+        gtol=1e-8,
+        max_nfev=200,
+        verbose=0
+    )
+    
+    return result
+```
+
+**STEP 5: Validate Fitted Curve**
+
+```python
+def validate_fitted_curve(theta, bonds, rf_curve, recovery):
+    """
+    Run validation checks on fitted curve.
+    """
+    lambda_0, lambda_1, beta = theta
+    
+    checks = {}
+    
+    # Check 1: Positive hazard rates
+    t_grid = np.linspace(0, 30, 100)
+    hazard_rates = lambda_0 + lambda_1 * np.exp(-beta * t_grid)
+    checks['positive_hazard'] = np.all(hazard_rates > 0)
+    
+    # Check 2: Monotonic survival probabilities
+    Q_values = [survival_prob(t, theta) for t in t_grid]
+    checks['monotonic_survival'] = all(Q_values[i] >= Q_values[i+1] 
+                                       for i in range(len(Q_values)-1))
+    
+    # Check 3: RMSE threshold
+    residuals = []
+    for bond in bonds:
+        if bond.callable:
+            model_price = price_bond_tree(bond, theta, rf_curve, recovery)
+        else:
+            model_price = price_bond_analytical(bond, theta, rf_curve, recovery)
+        
+        residuals.append(model_price - bond.price)
+    
+    rmse = np.sqrt(np.mean(np.array(residuals)**2))
+    checks['rmse'] = rmse
+    checks['rmse_acceptable'] = rmse < 5.0
+    
+    # Check 4: No individual outliers
+    max_abs_residual = np.max(np.abs(residuals))
+    checks['max_residual'] = max_abs_residual
+    checks['max_residual_acceptable'] = max_abs_residual < 10.0
+    
+    # Check 5: Parity equation (for non-callable bonds)
+    parity_errors = []
+    for bond in bonds:
+        if not bond.callable:
+            T = bond.maturity
+            
+            B_T = rf_curve.discount_factor(T)
+            Q_T = survival_prob(T, theta)
+            Xi = calculate_expected_loss(T, theta, rf_curve)
+            Pi = calculate_risky_pv01(T, theta, rf_curve)
+            r_b = calculate_risky_weighted_forward(T, theta, rf_curve)
+            
+            lhs = B_T * Q_T + Xi + r_b * Pi
+            parity_error = abs(lhs - 1.0)
+            parity_errors.append(parity_error)
+    
+    if parity_errors:
+        checks['max_parity_error'] = max(parity_errors)
+        checks['parity_valid'] = max(parity_errors) < 1e-6
+    
+    return checks
+```
+
+**STEP 6: Complete Fitting Function**
+
+```python
+def fit_survival_curve(bonds, rf_curve, recovery=0.40, verbose=True):
+    """
+    Complete survival curve fitting procedure.
+    
+    Parameters:
+    -----------
+    bonds : list of Bond objects
+        At least 3 bonds required
+    rf_curve : RiskFreeCurve object
+    recovery : float
+        Recovery rate (default 0.40)
+    verbose : bool
+        Print progress messages
+    
+    Returns:
+    --------
+    result : dict
+        {
+            'theta': fitted parameters [lambda_0, lambda_1, beta],
+            'rmse': root mean squared error,
+            'residuals': individual bond pricing errors,
+            'success': optimization success flag,
+            'validation': validation check results
+        }
+    """
+    # Step 1: Validate
+    validate_bonds(bonds)
+    
+    if verbose:
+        print(f"Fitting survival curve to {len(bonds)} bonds")
+        n_callable = sum(1 for b in bonds if b.callable)
+        print(f"  Bullets: {len(bonds) - n_callable}, Callables: {n_callable}")
+    
+    # Step 2: Initial guess
+    theta_0 = initial_guess(bonds, rf_curve)
+    
+    if verbose:
+        print(f"  Initial guess: λ₀={theta_0[0]:.6f}, λ₁={theta_0[1]:.6f}, β={theta_0[2]:.6f}")
+    
+    # Step 3: Create objective
+    objective = create_objective_function(bonds, rf_curve, recovery)
+    
+    # Step 4: Optimize
+    bounds = {
+        'lambda_0': [1e-5, 0.5],
+        'lambda_1': [-1.0, 1.0],
+        'beta': [0.01, 10.0]
+    }
+    
+    opt_result = optimize_survival_curve(objective, theta_0, bounds)
+    
+    theta_optimal = opt_result.x
+    residuals = opt_result.fun
+    rmse = np.sqrt(np.mean(residuals**2))
+    
+    if verbose:
+        print(f"  Optimization {'succeeded' if opt_result.success else 'FAILED'}")
+        print(f"  Final: λ₀={theta_optimal[0]:.6f}, λ₁={theta_optimal[1]:.6f}, β={theta_optimal[2]:.6f}")
+        print(f"  RMSE: {rmse:.3f} points")
+    
+    # Step 5: Validate
+    validation = validate_fitted_curve(theta_optimal, bonds, rf_curve, recovery)
+    
+    if verbose:
+        print(f"  Validation:")
+        print(f"    Positive hazard: {validation['positive_hazard']}")
+        print(f"    Monotonic survival: {validation['monotonic_survival']}")
+        print(f"    RMSE acceptable: {validation['rmse_acceptable']}")
+        if 'parity_valid' in validation:
+            print(f"    Parity valid: {validation['parity_valid']}")
+    
+    # Step 6: Return
+    return {
+        'theta': theta_optimal,
+        'rmse': rmse,
+        'residuals': residuals,
+        'success': opt_result.success,
+        'validation': validation,
+        'optimizer_message': opt_result.message
+    }
+```
+
+### 8.3 Usage Example
+
+```python
+# Load data
+bonds = [
+    Bond(isin='US037833A', maturity=3.0, coupon=3.5, price=99.2, callable=False),
+    Bond(isin='US037833B', maturity=5.0, coupon=4.5, price=101.3, callable=True,
+         call_schedule=[(3.0, 100)]),
+    Bond(isin='US037833C', maturity=7.0, coupon=4.0, price=98.5, callable=False),
+    Bond(isin='US037833D', maturity=10.0, coupon=5.0, price=103.8, callable=True,
+         call_schedule=[(5.0, 100)])
+]
+
+rf_curve = load_treasury_curve('2026-04-13')
+
+# Fit curve
+result = fit_survival_curve(bonds, rf_curve, recovery=0.40, verbose=True)
+
+# Extract results
+theta_optimal = result['theta']
+rmse = result['rmse']
+
+# Use fitted curve
+Q_5Y = survival_prob(5.0, theta_optimal)
+PD_5Y = 1 - Q_5Y
+
+print(f"5-year default probability: {PD_5Y:.2%}")
+```
+
+---
+
+<a name="implementation-details"></a>
+## 9. Implementation Details
+
+### 9.1 Data Structures
+
+**Bond Class:**
+
+```python
+from dataclasses import dataclass
+from typing import Optional, List, Tuple
+
+@dataclass
+class Bond:
+    """Bond data structure."""
+    
+    # Identifiers
+    isin: str
+    issuer_id: str
+    
+    # Economics
+    maturity: float  # Years
+    coupon: float    # Annual %, e.g., 4.5
+    price: float     # Clean price, % of par
+    
+    # Metadata
+    sector: Optional[str] = None
+    rating: Optional[str] = None
+    seniority: str = 'SENIOR_UNSECURED'
+    coupon_frequency: int = 2  # Semi-annual
+    
+    # Options
+    callable: bool = False
+    puttable: bool = False
+    call_schedule: Optional[List[Tuple[float, float]]] = None
+    put_schedule: Optional[List[Tuple[float, float]]] = None
+    
+    def recovery_rate(self) -> float:
+        """Get recovery rate by seniority."""
+        recovery_map = {
+            'SENIOR_SECURED': 0.50,
+            'SENIOR_UNSECURED': 0.40,
+            'SUBORDINATED': 0.30,
+            'JUNIOR': 0.20
+        }
+        return recovery_map.get(self.seniority, 0.40)
+    
+    def is_option_free(self) -> bool:
+        """Check if bond has no embedded options."""
+        return not self.callable and not self.puttable
+```
+
+**RiskFreeCurve Class:**
+
+```python
+import numpy as np
+
+class RiskFreeCurve:
+    """Risk-free discount curve."""
+    
+    def __init__(self, tenors: np.ndarray, spot_rates: np.ndarray):
+        """
+        Parameters:
+        -----------
+        tenors : array
+            Maturities in years [0.25, 0.5, 1, 2, ...]
+        spot_rates : array
+            Zero-coupon rates as decimals [0.025, 0.027, ...]
+        """
+        self.tenors = np.array(tenors)
+        self.spot_rates = np.array(spot_rates)
+        self.discount_factors = np.exp(-self.spot_rates * self.tenors)
+        self.log_discount_factors = np.log(self.discount_factors)
+    
+    def discount_factor(self, t: float) -> float:
+        """Get B(t) via interpolation."""
+        if t <= 0:
+            return 1.0
+        
+        if t >= self.tenors[-1]:
+            # Flat extrapolation
+            excess = t - self.tenors[-1]
+            return self.discount_factors[-1] * np.exp(-self.spot_rates[-1] * excess)
+        
+        # Linear interpolation of log(B(t))
+        log_B = np.interp(t, self.tenors, self.log_discount_factors)
+        return np.exp(log_B)
+    
+    def spot_rate(self, t: float) -> float:
+        """Get r(t) via interpolation."""
+        if t <= 0:
+            return self.spot_rates[0]
+        
+        if t >= self.tenors[-1]:
+            return self.spot_rates[-1]
+        
+        return np.interp(t, self.tenors, self.spot_rates)
+    
+    def forward_rate(self, t: float, dt: float = 0.001) -> float:
+        """
+        Instantaneous forward rate f(t).
+        
+        f(t) = -d[log B(t)]/dt
+        """
+        if t <= 0:
+            t = dt
+        
+        B_t = self.discount_factor(t)
+        B_t_plus = self.discount_factor(t + dt)
+        
+        f_t = -(np.log(B_t_plus) - np.log(B_t)) / dt
+        
+        return f_t
+```
+
+### 9.2 Helper Functions
+
+**Survival Probability:**
+
+```python
+def survival_prob(t: float, theta: np.ndarray) -> float:
+    """
+    Calculate Q(t; θ).
+    
+    Q(t) = exp[-λ₀ t - (λ₁/β)(1 - exp(-β t))]
+    """
+    if t <= 0:
+        return 1.0
+    
+    lambda_0, lambda_1, beta = theta
+    
+    cum_hazard = lambda_0 * t + (lambda_1 / beta) * (1 - np.exp(-beta * t))
+    
+    return np.exp(-cum_hazard)
+```
+
+**Expected Loss:**
+
+```python
+def calculate_expected_loss(T: float, theta: np.ndarray, rf_curve) -> float:
+    """
+    Calculate Ξ(T) = ∫₀ᵀ B(t)dQ(t).
+    """
+    # Quarterly grid
+    m = int(T * 4) + 1
+    t_grid = np.linspace(0, T, m)
+    
+    expected_loss = 0.0
+    
+    for i in range(1, m):
+        t_mid = (t_grid[i-1] + t_grid[i]) / 2
+        B_mid = rf_curve.discount_factor(t_mid)
+        Q_prev = survival_prob(t_grid[i-1], theta)
+        Q_curr = survival_prob(t_grid[i], theta)
+        dQ = Q_prev - Q_curr
+        
+        expected_loss += B_mid * dQ
+    
+    return expected_loss
+```
+
+**Risky PV01:**
+
+```python
+def calculate_risky_pv01(T: float, theta: np.ndarray, rf_curve) -> float:
+    """
+    Calculate Π(T) = ∫₀ᵀ B(t)Q(t)dt.
+    """
+    m = int(T * 4) + 1
+    t_grid = np.linspace(0, T, m)
+    
+    integrand = np.array([
+        rf_curve.discount_factor(t) * survival_prob(t, theta)
+        for t in t_grid
+    ])
+    
+    Pi = np.trapz(integrand, t_grid)
+    
+    return Pi
+```
+
+**Risky-Weighted Forward Rate:**
+
+```python
+def calculate_risky_weighted_forward(T: float, theta: np.ndarray, rf_curve) -> float:
+    """
+    Calculate r_b(T) = [∫₀ᵀ f(t)B(t)Q(t)dt] / Π(T).
+    """
+    m = int(T * 4) + 1
+    t_grid = np.linspace(0, T, m)
+    
+    f_values = np.array([rf_curve.forward_rate(t) for t in t_grid])
+    BQ_values = np.array([
+        rf_curve.discount_factor(t) * survival_prob(t, theta)
+        for t in t_grid
+    ])
+    
+    numerator = np.trapz(f_values * BQ_values, t_grid)
+    denominator = np.trapz(BQ_values, t_grid)
+    
+    r_b = numerator / denominator
+    
+    return r_b
+```
+
+### 9.3 Unified Bond Pricing Dispatcher
+
+```python
+def price_bond(bond: Bond, theta: np.ndarray, rf_curve, method: str = 'auto'):
+    """
+    Universal bond pricing function.
+    
+    Parameters:
+    -----------
+    bond : Bond
+    theta : array [lambda_0, lambda_1, beta]
+    rf_curve : RiskFreeCurve
+    method : str
+        'auto' (default), 'analytical', or 'tree'
+    
+    Returns:
+    --------
+    price : float
+        Model price per $100 face
+    """
+    recovery = bond.recovery_rate()
+    
+    # Auto-select method
+    if method == 'auto':
+        if bond.is_option_free():
+            method = 'analytical'
+        else:
+            method = 'tree'
+    
+    # Price with selected method
+    if method == 'analytical':
+        return price_bond_analytical(bond, theta, rf_curve, recovery)
+    elif method == 'tree':
+        return price_bond_tree(bond, theta, rf_curve, recovery)
+    else:
+        raise ValueError(f"Unknown method: {method}")
+```
+
+### 9.4 Performance Optimization
+
+**Caching Survival Probabilities:**
+
+For tree pricing, we compute Q(t) many times. Cache results:
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=1000)
+def survival_prob_cached(t: float, theta_tuple: tuple) -> float:
+    """Cached version of survival_prob."""
+    theta = np.array(theta_tuple)
+    return survival_prob(t, theta)
+
+# Usage in tree pricing:
+theta_tuple = tuple(theta)
+Q_t = survival_prob_cached(t, theta_tuple)
+```
+
+**Vectorized Grid Calculations:**
+
+Instead of loops, use NumPy vectorization:
+
+```python
+# Slow
+expected_loss = 0.0
+for i in range(1, len(t_grid)):
+    B_mid = rf_curve.discount_factor((t_grid[i-1] + t_grid[i])/2)
+    dQ = survival_prob(t_grid[i-1], theta) - survival_prob(t_grid[i], theta)
+    expected_loss += B_mid * dQ
+
+# Fast
+t_mid = (t_grid[:-1] + t_grid[1:]) / 2
+B_mid = np.array([rf_curve.discount_factor(t) for t in t_mid])
+Q_values = np.array([survival_prob(t, theta) for t in t_grid])
+dQ = Q_values[:-1] - Q_values[1:]
+expected_loss = np.sum(B_mid * dQ)
+```
+
+**Parallel Bond Pricing:**
+
+When fitting many issuers, parallelize across issuers:
+
+```python
+from concurrent.futures import ProcessPoolExecutor
+
+def fit_one_issuer(args):
+    issuer_id, bonds, rf_curve = args
+    result = fit_survival_curve(bonds, rf_curve, verbose=False)
+    return (issuer_id, result)
+
+# Fit in parallel
+with ProcessPoolExecutor(max_workers=4) as executor:
+    results = executor.map(fit_one_issuer, issuer_bond_pairs)
+```
+
+---
+
+<a name="validation-quality-checks"></a>
+## 10. Validation and Quality Checks
+
+### 10.1 Pre-Fitting Validation
+
+**Bond Data Quality:**
+
+```python
+def validate_bond_data(bonds):
+    """Check for data issues before fitting."""
+    
+    issues = []
+    
+    # Check 1: Minimum bond count
+    if len(bonds) < 3:
+        issues.append(f"Only {len(bonds)} bonds (need ≥3)")
+    
+    # Check 2: Maturity spread
+    maturities = [b.maturity for b in bonds]
+    if max(maturities) - min(maturities) < 2.0:
+        issues.append(f"Maturity range only {max(maturities)-min(maturities):.1f} years")
+    
+    # Check 3: Price reasonableness
+    for bond in bonds:
+        if bond.price < 50 or bond.price > 150:
+            issues.append(f"Bond {bond.isin}: suspicious price {bond.price}")
+    
+    # Check 4: Callable bonds have call schedules
+    for bond in bonds:
+        if bond.callable and not bond.call_schedule:
+            issues.append(f"Bond {bond.isin}: callable but no call schedule")
+    
+    # Check 5: No duplicate bonds
+    isins = [b.isin for b in bonds]
+    if len(isins) != len(set(isins)):
+        issues.append("Duplicate ISINs found")
+    
+    return issues
+```
+
+### 10.2 Post-Fitting Validation
+
+**Curve Quality Checks:**
+
+```python
+def validate_fitted_curve_comprehensive(theta, bonds, rf_curve, recovery):
+    """
+    Comprehensive validation of fitted survival curve.
+    """
+    checks = {}
+    lambda_0, lambda_1, beta = theta
+    
+    # === CHECK 1: Parameter Ranges ===
+    checks['lambda_0_range'] = (1e-5 <= lambda_0 <= 0.5)
+    checks['lambda_1_range'] = (-1.0 <= lambda_1 <= 1.0)
+    checks['beta_range'] = (0.01 <= beta <= 10.0)
+    
+    # === CHECK 2: Positive Hazard Rates ===
+    t_test = np.linspace(0, 50, 1000)
+    hazard = lambda_0 + lambda_1 * np.exp(-beta * t_test)
+    checks['min_hazard'] = np.min(hazard)
+    checks['hazard_positive'] = (np.min(hazard) > 0)
+    
+    # === CHECK 3: Survival Probabilities ===
+    Q_values = [survival_prob(t, theta) for t in t_test]
+    
+    # Q(0) should be 1
+    checks['Q_0'] = Q_values[0]
+    checks['Q_0_valid'] = abs(Q_values[0] - 1.0) < 1e-10
+    
+    # Q(t) should be monotonic decreasing
+    is_monotonic = all(Q_values[i] >= Q_values[i+1] for i in range(len(Q_values)-1))
+    checks['survival_monotonic'] = is_monotonic
+    
+    # Q(t) should be in [0, 1]
+    checks['survival_bounded'] = all(0 <= q <= 1 for q in Q_values)
+    
+    # === CHECK 4: Pricing Errors ===
+    residuals = []
+    abs_residuals = []
+    
+    for bond in bonds:
+        if bond.callable:
+            model_price = price_bond_tree(bond, theta, rf_curve, recovery)
+        else:
+            model_price = price_bond_analytical(bond, theta, rf_curve, recovery)
+        
+        residual = model_price - bond.price
+        residuals.append(residual)
+        abs_residuals.append(abs(residual))
+    
+    checks['residuals'] = residuals
+    checks['rmse'] = np.sqrt(np.mean(np.array(residuals)**2))
+    checks['max_abs_residual'] = max(abs_residuals)
+    checks['mean_residual'] = np.mean(residuals)
+    
+    # Quality thresholds
+    checks['rmse_excellent'] = checks['rmse'] < 1.0
+    checks['rmse_good'] = checks['rmse'] < 2.0
+    checks['rmse_acceptable'] = checks['rmse'] < 5.0
+    checks['no_large_outliers'] = checks['max_abs_residual'] < 10.0
+    checks['unbiased'] = abs(checks['mean_residual']) < 1.0
+    
+    # === CHECK 5: Parity Equation ===
+    parity_errors = []
+    
+    for bond in bonds:
+        if not bond.callable:  # Only for non-callable
+            T = bond.maturity
+            
+            B_T = rf_curve.discount_factor(T)
+            Q_T = survival_prob(T, theta)
+            Xi = calculate_expected_loss(T, theta, rf_curve)
+            Pi = calculate_risky_pv01(T, theta, rf_curve)
+            r_b = calculate_risky_weighted_forward(T, theta, rf_curve)
+            
+            lhs = B_T * Q_T + Xi + r_b * Pi
+            parity_error = abs(lhs - 1.0)
+            parity_errors.append(parity_error)
+    
+    if parity_errors:
+        checks['parity_errors'] = parity_errors
+        checks['max_parity_error'] = max(parity_errors)
+        checks['parity_valid'] = max(parity_errors) < 1e-6
+    
+    # === CHECK 6: Default Probabilities ===
+    test_horizons = [1, 2, 3, 5, 10]
+    default_probs = {}
+    
+    for T in test_horizons:
+        if T <= max(b.maturity for b in bonds):
+            PD = 1 - survival_prob(T, theta)
+            default_probs[f'{T}Y'] = PD
+    
+    checks['default_probs'] = default_probs
+    
+    # Sanity check: 5Y default prob should be reasonable
+    if '5Y' in default_probs:
+        PD_5Y = default_probs['5Y']
+        checks['5Y_PD_reasonable'] = (0.001 <= PD_5Y <= 0.50)
+    
+    # === CHECK 7: Term Structure ===
+    if len(test_horizons) >= 2:
+        # Check if term structure is plausible
+        PDs = [1 - survival_prob(T, theta) for T in test_horizons if T <= 20]
+        
+        # Default probs should increase with horizon
+        is_increasing = all(PDs[i] <= PDs[i+1] for i in range(len(PDs)-1))
+        checks['PD_increasing'] = is_increasing
+    
+    return checks
+```
+
+**Print Validation Report:**
+
+```python
+def print_validation_report(checks):
+    """
+    Print human-readable validation report.
+    """
+    print("\n" + "="*80)
+    print("VALIDATION REPORT")
+    print("="*80)
+    
+    print("\n[PARAMETER RANGES]")
+    print(f"  λ₀ in bounds: {checks['lambda_0_range']}")
+    print(f"  λ₁ in bounds: {checks['lambda_1_range']}")
+    print(f"  β in bounds:  {checks['beta_range']}")
+    
+    print("\n[HAZARD RATES]")
+    print(f"  All positive: {checks['hazard_positive']}")
+    print(f"  Minimum hazard: {checks['min_hazard']:.6f}")
+    
+    print("\n[SURVIVAL PROBABILITIES]")
+    print(f"  Q(0) = 1: {checks['Q_0_valid']}")
+    print(f"  Monotonic: {checks['survival_monotonic']}")
+    print(f"  Bounded [0,1]: {checks['survival_bounded']}")
+    
+    print("\n[PRICING ERRORS]")
+    print(f"  RMSE: {checks['rmse']:.3f} points")
+    print(f"  Max |residual|: {checks['max_abs_residual']:.3f} points")
+    print(f"  Mean residual: {checks['mean_residual']:.3f} points")
+    
+    if checks['rmse_excellent']:
+        quality = "EXCELLENT"
+    elif checks['rmse_good']:
+        quality = "GOOD"
+    elif checks['rmse_acceptable']:
+        quality = "ACCEPTABLE"
+    else:
+        quality = "POOR"
+    
+    print(f"  Overall quality: {quality}")
+    
+    if 'parity_valid' in checks:
+        print("\n[PARITY EQUATION]")
+        print(f"  Max error: {checks['max_parity_error']:.2e}")
+        print(f"  Valid: {checks['parity_valid']}")
+    
+    print("\n[DEFAULT PROBABILITIES]")
+    for horizon, pd in checks.get('default_probs', {}).items():
+        print(f"  {horizon}: {pd:.2%}")
+    
+    print("\n[OVERALL]")
+    
+    critical_checks = [
+        'hazard_positive',
+        'survival_monotonic',
+        'survival_bounded',
+        'rmse_acceptable',
+        'no_large_outliers'
+    ]
+    
+    all_critical_pass = all(checks.get(check, False) for check in critical_checks)
+    
+    if all_critical_pass:
+        print("  ✓ ALL CRITICAL CHECKS PASSED")
+    else:
+        print("  ✗ SOME CRITICAL CHECKS FAILED")
+        for check in critical_checks:
+            if not checks.get(check, False):
+                print(f"    - Failed: {check}")
+    
+    print("="*80)
+```
+
+### 10.3 Cross-Validation
+
+**Leave-One-Out Validation:**
+
+```python
+def cross_validate_curve(bonds, rf_curve, recovery=0.40):
+    """
+    Leave-one-out cross-validation.
+    
+    Fit curve excluding each bond, then check pricing error on held-out bond.
+    """
+    loo_errors = []
+    
+    for i in range(len(bonds)):
+        # Hold out bond i
+        train_bonds = bonds[:i] + bonds[i+1:]
+        test_bond = bonds[i]
+        
+        if len(train_bonds) < 3:
+            continue  # Need at least 3 to fit
+        
+        # Fit on training set
+        result = fit_survival_curve(train_bonds, rf_curve, recovery, verbose=False)
+        
+        if not result['success']:
+            continue
+        
+        theta = result['theta']
+        
+        # Price held-out bond
+        if test_bond.callable:
+            model_price = price_bond_tree(test_bond, theta, rf_curve, recovery)
+        else:
+            model_price = price_bond_analytical(test_bond, theta, rf_curve, recovery)
+        
+        error = model_price - test_bond.price
+        loo_errors.append({
+            'bond': test_bond.isin,
+            'maturity': test_bond.maturity,
+            'error': error
+        })
+    
+    # Calculate LOO RMSE
+    errors = [e['error'] for e in loo_errors]
+    loo_rmse = np.sqrt(np.mean(np.array(errors)**2))
+    
+    return {
+        'loo_errors': loo_errors,
+        'loo_rmse': loo_rmse
+    }
+```
+
+---
+
+<a name="edge-cases-troubleshooting"></a>
+## 11. Edge Cases and Troubleshooting
+
+### 11.1 Common Failure Modes
+
+**Problem 1: Optimization Fails to Converge**
+
+**Symptoms:**
+- `result.success = False`
+- RMSE > 10 points
+- Message: "Maximum iterations reached"
+
+**Causes:**
+- Poor initial guess
+- Bad data (outlier bonds)
+- Overly restrictive bounds
+- Insufficient bonds
+
+**Solutions:**
+
+```python
+# Solution 1: Try multiple initial guesses
+theta_guesses = [
+    [0.01, 0.005, 0.35],
+    [0.02, 0.010, 0.35],
+    [0.05, 0.025, 0.35],
+    [0.02, 0.010, 0.70],
+    [0.02, 0.010, 0.15],
+]
+
+best_result = None
+best_rmse = float('inf')
+
+for theta_0 in theta_guesses:
+    result = fit_survival_curve_with_initial_guess(bonds, rf_curve, theta_0)
+    
+    if result['success'] and result['rmse'] < best_rmse:
+        best_result = result
+        best_rmse = result['rmse']
+
+# Solution 2: Identify and remove outliers
+def remove_outliers(bonds, rf_curve, threshold=5.0):
+    """
+    Iteratively remove bonds with large pricing errors.
+    """
+    clean_bonds = bonds.copy()
+    
+    while len(clean_bonds) >= 3:
+        result = fit_survival_curve(clean_bonds, rf_curve, verbose=False)
+        
+        if not result['success']:
+            break
+        
+        # Find worst bond
+        residuals = result['residuals']
+        abs_residuals = np.abs(residuals)
+        worst_idx = np.argmax(abs_residuals)
+        worst_error = abs_residuals[worst_idx]
+        
+        if worst_error > threshold:
+            print(f"Removing outlier: {clean_bonds[worst_idx].isin} (error: {worst_error:.2f})")
+            clean_bonds.pop(worst_idx)
+        else:
+            break
+    
+    return clean_bonds
+
+# Solution 3: Widen bounds
+bounds_wide = {
+    'lambda_0': [1e-6, 1.0],
+    'lambda_1': [-2.0, 2.0],
+    'beta': [0.001, 20.0]
+}
+```
+
+**Problem 2: Negative Hazard Rates**
+
+**Symptoms:**
+- `checks['hazard_positive'] = False`
+- Fitted λ₀ + λ₁ < 0
+
+**Causes:**
+- Callable bonds create illusion of low default risk
+- Optimization exploring infeasible region
+
+**Solutions:**
+
+```python
+# Solution 1: Add hazard positivity constraint
+def objective_with_constraint(theta):
+    """Objective that penalizes negative hazard."""
+    
+    residuals = standard_objective(theta)
+    
+    # Check hazard rates
+    lambda_0, lambda_1, beta = theta
+    min_hazard = lambda_0 + lambda_1  # Minimum at t=0
+    
+    if min_hazard < 0:
+        # Add large penalty
+        penalty = -min_hazard * 1000
+        residuals = np.append(residuals, [penalty] * len(bonds))
+    
+    return residuals
+
+# Solution 2: Constrain λ₁
+bounds_constrained = {
+    'lambda_0': [1e-5, 0.5],
+    'lambda_1': [-lambda_0, 1.0],  # Ensure λ₀ + λ₁ ≥ 0
+    'beta': [0.01, 10.0]
+}
+```
+
+**Problem 3: Parity Equation Violation**
+
+**Symptoms:**
+- `checks['parity_valid'] = False`
+- |B(T)Q(T) + Ξ(T) + rb(T)Π(T) - 1.0| > 1e-6
+
+**Causes:**
+- Integration grid too coarse
+- Numerical precision issues
+- Implementation bug
+
+**Solutions:**
+
+```python
+# Solution 1: Finer integration grid
+def calculate_expected_loss_fine(T, theta, rf_curve):
+    """Use finer grid."""
+    m = int(T * 8) + 1  # Semi-quarterly instead of quarterly
+    # ... rest same
+
+# Solution 2: Check implementation
+def validate_parity_components(T, theta, rf_curve):
+    """Debug parity equation."""
+    
+    B_T = rf_curve.discount_factor(T)
+    Q_T = survival_prob(T, theta)
+    Xi = calculate_expected_loss(T, theta, rf_curve)
+    Pi = calculate_risky_pv01(T, theta, rf_curve)
+    r_b = calculate_risky_weighted_forward(T, theta, rf_curve)
+    
+    print(f"T = {T}")
+    print(f"B(T)Q(T) = {B_T * Q_T:.10f}")
+    print(f"Ξ(T)     = {Xi:.10f}")
+    print(f"rb Π(T)  = {r_b * Pi:.10f}")
+    print(f"Sum      = {B_T * Q_T + Xi + r_b * Pi:.10f}")
+    print(f"Target   = 1.0")
+    print(f"Error    = {abs(B_T * Q_T + Xi + r_b * Pi - 1.0):.2e}")
+```
+
+### 11.2 Issuer-Specific Issues
+
+**Problem: Distressed Issuer (Very Wide Spreads)**
+
+**Symptoms:**
+- All bonds trading at deep discount (< 70)
+- Fitted λ₀ > 0.2 (>20% annual default rate)
+
+**Approach:**
+
+```python
+# Use specialized initial guess
+if all(b.price < 70 for b in bonds):
+    # Distressed issuer
+    theta_0 = [0.15, 0.05, 0.5]  # High default risk
+else:
+    # Normal initial guess
+    theta_0 = initial_guess(bonds, rf_curve)
+```
+
+**Problem: Very Few Bonds (n=3)**
+
+**Symptoms:**
+- Exactly 3 bonds available
+- Perfect fit possible (3 equations, 3 unknowns)
+- Overfitting risk
+
+**Approach:**
+
+```python
+if len(bonds) == 3:
+    # Use simpler model or regularization
+    
+    # Option 1: Fix β, fit λ₀ and λ₁ only
+    beta_fixed = 0.35
+    
+    def objective_2param(params):
+        lambda_0, lambda_1 = params
+        theta = [lambda_0, lambda_1, beta_fixed]
+        return standard_objective(theta)
+    
+    # Option 2: Add regularization penalty
+    def objective_regularized(theta):
+        residuals = standard_objective(theta)
+        
+        # Penalize extreme parameters
+        lambda_0, lambda_1, beta = theta
+        penalty = 0.01 * (lambda_0**2 + lambda_1**2)
+        
+        return np.append(residuals, penalty)
+```
+
+---
+
+<a name="production-considerations"></a>
+## 12. Production Considerations
+
+### 12.1 Daily Batch Processing
+
+**Workflow:**
+
+```python
+def run_daily_survival_curve_batch(as_of_date: str):
+    """
+    Production batch process for all issuers.
+    """
+    import logging
+    
+    logger = logging.getLogger('survival_curves')
+    logger.info(f"Starting batch for {as_of_date}")
+    
+    # Load data
+    all_bonds = load_bonds_from_database(as_of_date)
+    rf_curve = load_treasury_curve(as_of_date)
+    
+    logger.info(f"Loaded {len(all_bonds)} bonds")
+    
+    # Group by issuer
+    issuer_bonds = defaultdict(list)
+    for bond in all_bonds:
+        issuer_bonds[bond.issuer_id].append(bond)
+    
+    logger.info(f"Found {len(issuer_bonds)} issuers")
+    
+    # Fit curves
+    results = {}
+    failed = []
+    
+    for issuer_id, bonds in issuer_bonds.items():
+        if len(bonds) < 3:
+            logger.debug(f"{issuer_id}: Only {len(bonds)} bonds, skipping")
+            continue
+        
+        try:
+            logger.info(f"Fitting {issuer_id} ({len(bonds)} bonds)")
+            
+            result = fit_survival_curve(bonds, rf_curve, verbose=False)
+            
+            if result['success'] and result['rmse'] < 5.0:
+                results[issuer_id] = {
+                    'theta': result['theta'],
+                    'rmse': result['rmse'],
+                    'n_bonds': len(bonds),
+                    'validation': result['validation']
+                }
+                logger.info(f"  ✓ {issuer_id}: RMSE={result['rmse']:.2f}")
+            else:
+                failed.append(issuer_id)
+                logger.warning(f"  ✗ {issuer_id}: Poor fit (RMSE={result['rmse']:.2f})")
+        
+        except Exception as e:
+            failed.append(issuer_id)
+            logger.error(f"  ✗ {issuer_id}: {str(e)}")
+    
+    # Save results
+    save_curves_to_database(as_of_date, results)
+    
+    # Summary
+    logger.info(f"Batch complete: {len(results)} successful, {len(failed)} failed")
+    
+    return {
+        'date': as_of_date,
+        'successful': results,
+        'failed': failed
+    }
+```
+
+### 12.2 Database Schema
+
+**Recommended tables:**
+
+```sql
+-- Fitted survival curves
+CREATE TABLE survival_curves (
+    curve_id SERIAL PRIMARY KEY,
+    as_of_date DATE NOT NULL,
+    issuer_id VARCHAR(20) NOT NULL,
+    lambda_0 DOUBLE PRECISION NOT NULL,
+    lambda_1 DOUBLE PRECISION NOT NULL,
+    beta DOUBLE PRECISION NOT NULL,
+    rmse DOUBLE PRECISION NOT NULL,
+    n_bonds INTEGER NOT NULL,
+    created_timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(as_of_date, issuer_id)
+);
+
+-- Fitting diagnostics
+CREATE TABLE curve_fit_diagnostics (
+    diagnostic_id SERIAL PRIMARY KEY,
+    curve_id INTEGER REFERENCES survival_curves(curve_id),
+    bond_isin VARCHAR(12) NOT NULL,
+    market_price DOUBLE PRECISION NOT NULL,
+    model_price DOUBLE PRECISION NOT NULL,
+    residual DOUBLE PRECISION NOT NULL,
+    is_callable BOOLEAN NOT NULL
+);
+
+-- Validation checks
+CREATE TABLE curve_validation (
+    validation_id SERIAL PRIMARY KEY,
+    curve_id INTEGER REFERENCES survival_curves(curve_id),
+    check_name VARCHAR(50) NOT NULL,
+    check_value DOUBLE PRECISION,
+    check_passed BOOLEAN NOT NULL
+);
+
+-- Indices
+CREATE INDEX idx_curves_date_issuer ON survival_curves(as_of_date, issuer_id);
+CREATE INDEX idx_diagnostics_curve ON curve_fit_diagnostics(curve_id);
+```
+
+### 12.3 Monitoring and Alerts
+
+**Key metrics to monitor:**
+
+```python
+def generate_monitoring_report(results):
+    """
+    Generate daily monitoring report.
+    """
+    report = {
+        'date': results['date'],
+        'total_issuers': len(results['successful']) + len(results['failed']),
+        'successful_fits': len(results['successful']),
+        'failed_fits': len(results['failed']),
+        'success_rate': len(results['successful']) / (len(results['successful']) + len(results['failed'])),
+    }
+    
+    # RMSE distribution
+    rmse_values = [r['rmse'] for r in results['successful'].values()]
+    
+    report['rmse_median'] = np.median(rmse_values)
+    report['rmse_p90'] = np.percentile(rmse_values, 90)
+    report['rmse_max'] = np.max(rmse_values)
+    
+    # Flagged issuers (high RMSE)
+    report['high_rmse_issuers'] = [
+        issuer for issuer, r in results['successful'].items()
+        if r['rmse'] > 3.0
+    ]
+    
+    # Default probability distribution
+    pd_5y_values = []
+    for issuer, r in results['successful'].items():
+        theta = r['theta']
+        PD_5Y = 1 - survival_prob(5.0, theta)
+        pd_5y_values.append(PD_5Y)
+    
+    report['median_5y_pd'] = np.median(pd_5y_values)
+    report['p90_5y_pd'] = np.percentile(pd_5y_values, 90)
+    
+    return report
+```
+
+**Alert conditions:**
+
+```python
+def check_alerts(report):
+    """
+    Check for anomalous conditions.
+    """
+    alerts = []
+    
+    # Alert 1: Low success rate
+    if report['success_rate'] < 0.80:
+        alerts.append({
+            'severity': 'HIGH',
+            'message': f"Success rate {report['success_rate']:.1%} below 80%"
+        })
+    
+    # Alert 2: High median RMSE
+    if report['rmse_median'] > 2.0:
+        alerts.append({
+            'severity': 'MEDIUM',
+            'message': f"Median RMSE {report['rmse_median']:.2f} > 2.0"
+        })
+    
+    # Alert 3: Many high-RMSE issuers
+    if len(report['high_rmse_issuers']) > 10:
+        alerts.append({
+            'severity': 'MEDIUM',
+            'message': f"{len(report['high_rmse_issuers'])} issuers with RMSE > 3.0"
+        })
+    
+    # Alert 4: Unusual default probability distribution
+    if report['median_5y_pd'] > 0.10:
+        alerts.append({
+            'severity': 'LOW',
+            'message': f"Median 5Y PD {report['median_5y_pd']:.1%} seems high"
+        })
+    
+    return alerts
+```
+
+### 12.4 Version Control and Reproducibility
+
+**Save complete execution context:**
+
+```python
+import json
+from datetime import datetime
+
+def save_execution_metadata(results, output_path):
+    """
+    Save full execution context for reproducibility.
+    """
+    import sys
+    import platform
+    
+    metadata = {
+        'execution_time': datetime.now().isoformat(),
+        'as_of_date': results['date'],
+        'python_version': sys.version,
+        'platform': platform.platform(),
+        'numpy_version': np.__version__,
+        'scipy_version': scipy.__version__,
+        
+        # Algorithm parameters
+        'parameters': {
+            'recovery_rate': 0.40,
+            'n_tree_steps': 40,
+            'rate_volatility': 0.01,
+            'bounds': {
+                'lambda_0': [1e-5, 0.5],
+                'lambda_1': [-1.0, 1.0],
+                'beta': [0.01, 10.0]
+            },
+            'optimizer': {
+                'method': 'trf',
+                'ftol': 1e-8,
+                'xtol': 1e-8,
+                'max_nfev': 200
+            }
+        },
+        
+        # Results summary
+        'results': {
+            'successful_fits': len(results['successful']),
+            'failed_fits': len(results['failed']),
+        }
+    }
+    
+    with open(output_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
+```
+
+### 12.5 Performance Benchmarks
+
+**Expected performance (single-threaded):**
+
+| Component | Time per Issuer | Notes |
+|-----------|----------------|-------|
+| Data loading | 10 ms | From database |
+| Bullet pricing (per bond) | 0.5 ms | Analytical |
+| Callable pricing (per bond) | 20 ms | Tree (40 steps) |
+| Optimization (5 bonds, 50 iter) | 500 ms | 3 callable, 2 bullet |
+| Validation | 50 ms | All checks |
+| **Total per issuer** | **~1 second** | Typical case |
+
+**Scalability:**
+
+- 100 issuers: ~2 minutes (single-threaded)
+- 100 issuers: ~30 seconds (4-core parallel)
+- 1000 issuers: ~15 minutes (4-core parallel)
+
+**Optimization opportunities:**
+
+1. **Parallel processing** across issuers (linear speedup)
+2. **Caching** survival probabilities in tree pricing
+3. **Adaptive tree depth** (fewer steps for out-of-money calls)
+4. **Early stopping** if RMSE < threshold
+
+---
+
+## Appendix A: Mathematical Derivations
+
+### A.1 Derivation of Bond Pricing Formula
+
+Starting from no-arbitrage principle:
+
+```
+Bond Price = E^Q[Discounted Cash Flows]
+```
+
+Under risk-neutral measure Q:
+
+For a coupon payment c/f at time tᵢ:
+```
+PV(coupon at tᵢ) = E^Q[Discount × Coupon × 𝟙{τ > tᵢ}]
+                 = B(tᵢ) × (c/f) × Q(tᵢ)
+```
+
+For principal 100 at maturity T:
+```
+PV(principal) = E^Q[Discount × Principal × 𝟙{τ > T}]
+              = B(T) × 100 × Q(T)
+```
+
+For recovery ℜ × 100 at default time τ:
+```
+PV(recovery) = E^Q[Discount(τ) × ℜ × 100 × 𝟙{τ ≤ T}]
+             = ∫₀ᵀ B(t) × ℜ × 100 × dF(t)
+             = ℜ × 100 × ∫₀ᵀ B(t) × [-dQ(t)]
+             = ℜ × 100 × Ξ(T)
+```
+
+where F(t) = 1 - Q(t) is the cumulative distribution of τ.
+
+**Total price:**
+```
+P = Σᵢ (c/f) B(tᵢ)Q(tᵢ) + 100 B(T)Q(T) + ℜ × 100 × Ξ(T)
+```
+
+### A.2 Derivation of Parity Equation
+
+Consider a zero-coupon bond with face value 1:
+
+```
+Price = B(T)Q(T) + ℜ Ξ(T)
+```
+
+Now consider a portfolio paying $1/year continuously:
+
+```
+Portfolio value = ∫₀ᵀ B(t)Q(t)dt = Π(T)
+```
+
+This portfolio earns interest at the risky-weighted forward rate:
+
+```
+Interest earned = r_b(T) × Π(T)
+```
+
+By no-arbitrage, at t=0 investing in the portfolio must equal 1:
+
+```
+Portfolio cost + Interest = Final payout
+Π(T) - r_b(T)Π(T) + [B(T)Q(T) + ℜΞ(T)] = 1
+
+Rearranging:
+B(T)Q(T) + Ξ(T) + r_b(T)Π(T) = 1
+```
+
+This is the fundamental parity equation.
+
+---
+
+## Appendix B: References
+
+1. Duffie, D., & Singleton, K. J. (1999). "Modeling term structures of defaultable bonds." *Review of Financial Studies*, 12(4), 687-720.
+
+2. Hull, J., & White, A. (1990). "Pricing interest-rate-derivative securities." *Review of Financial Studies*, 3(4), 573-592.
+
+3. Lando, D. (2004). *Credit Risk Modeling: Theory and Applications*. Princeton University Press.
+
+4. Schönbucher, P. J. (2003). *Credit Derivatives Pricing Models*. Wiley Finance.
+
+5. Jarrow, R. A., & Turnbull, S. M. (1995). "Pricing derivatives on financial securities subject to credit risk." *Journal of Finance*, 50(1), 53-85.
+
+---
+
+## Document Revision History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-04-01 | Initial draft |
+| 2.0 | 2026-04-13 | Added callable bond pricing, complete algorithm, production sections |
+
+---
+
+However, I Notice a Gap
+While the document does cover the unified framework, it could be more explicit about why this works for callables. Let me add a focused section:
+
+Missing: Clear Explanation of "Why One θ Fits Both"
+The document should more clearly explain:
+The Key Insight:
+Both bullet and callable bonds from the same issuer share the same underlying default risk (same survival curve θ). The call option changes the payoff structure, not the default probability.
+Mathematical statement:
+For issuer X:
+
+Bullet bond price: P_bullet = f(θ, coupon, maturity)
+Callable bond price: P_callable = f(θ, coupon, maturity, call_schedule)
+
+Both depend on the same θ.
+Why optimization works:
+The optimizer searches for θ* such that:
+Σ (all bullets)   [P_analytical(θ) - P_market]²  +
+Σ (all callables) [P_tree(θ) - P_market]²  → minimize
+Both terms share θ, so we're finding the single survival curve that simultaneously:
+
+Makes bullets price correctly (via analytical formula)
+Makes callables price correctly (via tree that accounts for options)
+
+
+What Could Be Clearer
+The document covers all the mechanics but could emphasize more:
+
+Section 1 (Executive Summary) says:
+
+"A unified optimization framework that simultaneously fits survival curves to both bullet and callable bonds"
+
+✅ But could add: "The same 3 survival curve parameters θ explain both bond types because default risk is fundamental to the issuer, not the bond structure."
+Section 3.3 discusses callable complexity but could add:
+
+"Despite the complexity, callable and bullet bonds from the same issuer must share the same survival curve because they face the same default risk."
+
+
+Section 7 (Optimization) could start with:
+
+"Key Principle: One issuer → One survival curve → Fits all bonds (bullets and callables) simultaneously"
+
+
+
+
+Bottom Line
+Does it cover unified fitting?
+✅ YES - Complete implementation is there:
+
+Section 7.2: Unified objective function
+Section 8: Complete unified algorithm
+Section 9.3: Unified dispatcher
+Section 8.3: Mixed portfolio example
+
+Could it be more explicit?
+⚠️ YES - The document shows how (mechanics) but could better emphasize why (the economic principle that one θ fits both types).
+What's There:
+
+✅ Complete working code
+✅ Unified fit_survival_curve() function
+✅ Automatic routing between analytical/tree pricing
+✅ Example with mixed bonds
+
+What Could Be Added:
+
+⚠️ More explicit "why one θ works" explanation
+⚠️ Clearer statement upfront: "Same issuer → Same default risk → Same θ → Fits all bond types"
+⚠️ Diagram showing how bullets and callables feed into same optimization
+
+The framework is complete and correct, but could front-load the conceptual explanation more prominently.
