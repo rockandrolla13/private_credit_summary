@@ -1,0 +1,393 @@
+# Survival Curve Fitting: Quick Reference Wiki
+
+**Last Updated:** April 13, 2026 | **Version:** 1.0 | **Maintainer:** Quant Team
+
+---
+
+## What Is This?
+
+**Survival Curve Fitting** extracts an issuer's default probability curve from observable corporate bond prices.
+
+**Input:** Bond prices + Treasury rates  
+**Output:** Survival curve Q(t) showing probability issuer survives to time t  
+**Use Cases:** Credit risk assessment, spread calculation, relative value signals
+
+---
+
+## The Big Idea
+
+### The Problem
+You can't observe default probabilities directly. But bond prices contain information about how risky investors think a company is.
+
+### The Solution
+**Reverse engineer** the survival curve from bond prices:
+
+```
+Observable:     Bond prices (market data)
+                     ↓
+Mathematical:   Fit survival curve Q(t)
+                     ↓
+Output:         Default probabilities, spreads, signals
+```
+
+### Why It Works
+If you have the right survival curve, you can price bonds correctly. So find the curve that makes your model prices match market prices.
+
+---
+
+## Key Concepts
+
+### Survival Curve Q(t)
+**Definition:** Probability an issuer doesn't default before time t
+
+**Example:**
+- Q(1Y) = 98% → 2% chance of default in first year
+- Q(5Y) = 85% → 15% chance of default within 5 years
+- Q(10Y) = 70% → 30% chance of default within 10 years
+
+**Properties:**
+- Always decreasing (Q can't increase over time)
+- Starts at 100% (Q(0) = 1)
+- Never goes below 0%
+
+### Hazard Rate λ(t)
+**Definition:** Instantaneous default intensity at time t
+
+**Think of it as:** The "speed" at which default risk is happening
+
+**Model we use:**
+```
+λ(t) = λ₀ + λ₁ × exp(-β × t)
+```
+
+Three parameters:
+- **λ₀**: Long-term baseline default rate
+- **λ₁**: Extra short-term risk (can be negative)
+- **β**: How fast we transition from short-term to long-term
+
+**Relationship to survival:**
+```
+Q(t) = exp[-∫₀ᵗ λ(s)ds]
+```
+
+### Recovery Rate ℜ
+**Definition:** What you get back if the issuer defaults
+
+**Standard assumptions:**
+- Senior Secured: 50%
+- Senior Unsecured: 40% ← Most common
+- Subordinated: 30%
+- Junior: 20%
+
+**Why it matters:** A 5% default probability with 40% recovery is very different from 5% with 0% recovery.
+
+---
+
+## How It Works (Simple Version)
+
+### The Process
+
+**STEP 1: Collect Bonds**
+Get all bonds for an issuer:
+- Need at least 3 bonds
+- Mix of maturities (short, medium, long)
+- Can include both bullets and callables
+
+**STEP 2: Guess the Curve**
+Start with an initial guess for [λ₀, λ₁, β]
+
+**STEP 3: Price All Bonds**
+Use the guessed curve to calculate what each bond *should* be worth:
+- Bullet bonds → Fast analytical formula
+- Callable bonds → Tree pricing (accounts for call option)
+
+**STEP 4: Compare to Market**
+Calculate errors:
+```
+Error = Model Price - Market Price
+```
+
+**STEP 5: Adjust and Repeat**
+Change [λ₀, λ₁, β] to reduce errors, then repeat Steps 3-5 until errors are tiny.
+
+**STEP 6: Done**
+You now have the survival curve that best explains all bond prices.
+
+### Example
+
+**Apple bonds:**
+- 3Y bond @ 99.2
+- 5Y callable @ 101.3 (callable at 100 from year 3)
+- 7Y bond @ 98.5
+- 10Y callable @ 103.8 (callable at 100 from year 5)
+
+**After fitting:**
+- θ* = [λ₀=0.0219, λ₁=0.0119, β=0.523]
+- This curve makes all four bonds price correctly
+- Implied 5Y default probability: 11.5%
+
+---
+
+## The Unified Framework (Key Innovation)
+
+### One Algorithm for All Bond Types
+
+**Traditional approach (wrong):**
+- Fit bullets separately
+- Fit callables separately
+- Try to reconcile somehow
+
+**Our approach (correct):**
+- **One optimization loop** handles both types
+- Same issuer → Same default risk → Same survival curve
+- Different pricing methods used internally, but same θ
+
+### How It Works
+
+```python
+# Pseudo-code
+def fit_survival_curve(bonds):
+    """Works for ANY mix of bullets and callables."""
+    
+    def calculate_errors(theta):
+        errors = []
+        
+        for bond in bonds:
+            # Automatic routing based on bond type
+            if bond.is_callable:
+                price = price_with_tree(bond, theta)  # Accounts for call option
+            else:
+                price = price_analytically(bond, theta)  # Fast formula
+            
+            error = price - bond.market_price
+            errors.append(error)
+        
+        return errors
+    
+    # Find theta that minimizes all errors at once
+    theta_optimal = optimize(calculate_errors)
+    
+    return theta_optimal
+```
+
+**Why this works:**
+- Callables and bullets have same default risk (same issuer)
+- Call option affects payoff structure, not default probability
+- One survival curve θ must fit both types simultaneously
+
+---
+
+## Common Questions
+
+### Q: Why can't I just use existing spreads?
+**A:** OAS and Z-spread assume 0% recovery, which systematically misprices bonds based on coupon. They're mathematically flawed.
+
+### Q: Do I need different code for bullets vs callables?
+**A:** No. One function handles both. It automatically uses analytical pricing for bullets (fast) and tree pricing for callables (accurate).
+
+### Q: What if I only have callable bonds?
+**A:** Same code works. The tree pricing handles the call options, and optimization finds the survival curve that fits all of them.
+
+### Q: How many bonds do I need?
+**A:** Minimum 3 (we have 3 parameters to fit). More is better. Ideal: 5-10 with varied maturities.
+
+### Q: What if optimization fails?
+**A:** Try multiple initial guesses, remove outlier bonds, or widen parameter bounds. See troubleshooting guide.
+
+### Q: How long does it take?
+**A:** ~1 second per issuer (typical case: 5 bonds, mix of bullets/callables). Scales linearly with # of issuers.
+
+---
+
+## Quality Checks
+
+### Must Pass
+- ✅ RMSE < 5 points (pricing errors small)
+- ✅ Hazard rates always positive
+- ✅ Q(t) monotonically decreasing
+- ✅ No single bond with error > 10 points
+
+### Nice to Have
+- 🎯 RMSE < 2 points (good fit)
+- 🎯 RMSE < 1 point (excellent fit)
+- 🎯 Parity equation holds (for bullets): B(T)Q(T) + Ξ(T) + r_b Π(T) = 1
+
+### Red Flags
+- 🚩 RMSE > 10 points → Bad fit, investigate
+- 🚩 Negative hazard rates → Invalid curve
+- 🚩 Q(t) increasing → Optimization failed
+- 🚩 All bonds have same-sign errors → Systematic bias
+
+---
+
+## Daily Workflow
+
+### Production Batch Process
+
+```
+1. Load Data
+   ├─ All corporate bonds (as of date)
+   ├─ Treasury curve (as of date)
+   └─ Static data (ratings, sectors, seniority)
+
+2. Group by Issuer
+   └─ Each issuer gets separate curve
+
+3. For Each Issuer:
+   ├─ Validate: Need ≥3 bonds
+   ├─ Fit: Run optimization
+   ├─ Validate: Check quality
+   └─ Save: Store θ* in database
+
+4. Monitor
+   ├─ Success rate (should be >80%)
+   ├─ RMSE distribution (median <2.0)
+   └─ Alert on anomalies
+```
+
+### Typical Coverage
+
+**Example universe:**
+- 100 issuers
+- 2,500 bonds total
+  - 1,500 bullets
+  - 1,000 callables
+
+**Results:**
+- 85 successful fits
+- 15 failed (insufficient bonds, bad data, distressed)
+- ~2 minutes runtime (4-core parallel)
+
+---
+
+## When Things Go Wrong
+
+### Problem: High RMSE
+**Causes:** Bad data, outlier bonds, wrong recovery assumption  
+**Fix:** Remove outliers, check data quality, try multiple initial guesses
+
+### Problem: Optimization doesn't converge
+**Causes:** Poor initial guess, infeasible parameters  
+**Fix:** Try multiple starting points, widen bounds, simplify model
+
+### Problem: Negative hazard rates
+**Causes:** Callable bonds creating illusion of safety  
+**Fix:** Add constraint λ₀ + λ₁ ≥ 0, check call schedules
+
+### Problem: Only 2 bonds available
+**Causes:** Small issuer, limited issuance  
+**Fix:** Use sector-rating curve instead of issuer-specific curve
+
+---
+
+## Quick Reference: Key Formulas
+
+### Survival Probability
+```
+Q(t) = exp[-λ₀ t - (λ₁/β)(1 - exp(-βt))]
+```
+
+### Default Probability
+```
+PD(t) = 1 - Q(t)
+```
+
+### Bullet Bond Price
+```
+P = Σ (coupon × B(t) × Q(t)) + 100 × B(T) × Q(T) + Recovery × ExpectedLoss
+```
+
+### Callable Bond Price
+```
+P = Value from tree pricing
+    (accounts for optimal call decisions at each node)
+```
+
+### Risky PV01
+```
+Π(T) = ∫₀ᵀ B(t)Q(t)dt
+```
+
+### Expected Loss
+```
+Ξ(T) = ∫₀ᵀ B(t)dQ(t)
+```
+
+---
+
+## Example Output
+
+### Fitted Curve for AAPL
+
+**Parameters:**
+- λ₀ = 0.0219
+- λ₁ = 0.0119
+- β = 0.523
+
+**Implied Default Probabilities:**
+- 1Y: 3.3%
+- 5Y: 11.5%
+- 10Y: 21.8%
+
+**Fit Quality:**
+- RMSE: 0.34 points
+- 4 bonds used (2 bullets, 2 callables)
+- All pricing errors < 0.5 points
+
+**Pricing Comparison:**
+
+| Bond | Type | Maturity | Market | Model | Error |
+|------|------|----------|--------|-------|-------|
+| A | Bullet | 3Y | 99.20 | 99.18 | -0.02 |
+| B | Callable | 5Y | 101.30 | 101.42 | +0.12 |
+| C | Bullet | 7Y | 98.50 | 98.64 | +0.14 |
+| D | Callable | 10Y | 103.80 | 103.71 | -0.09 |
+
+---
+
+## Tools & Links
+
+### Code
+- **Main function:** `fit_survival_curve(bonds, rf_curve)`
+- **Pricing:** `price_bond(bond, theta, rf_curve)` (auto-routes to analytical/tree)
+- **Validation:** `validate_fitted_curve(theta, bonds, rf_curve)`
+
+### Documentation
+- Technical guide: `survival_curve_fitting_technical_guide.md` (2,500 lines, complete math)
+- Waterfall methodology: `waterfall_methodology.md` (step-by-step implementation)
+- API reference: `docs/api/survival_curves.md`
+
+### Database
+- Table: `survival_curves` (fitted parameters by date/issuer)
+- Table: `curve_fit_diagnostics` (per-bond residuals)
+- Table: `curve_validation` (quality checks)
+
+### Monitoring
+- Dashboard: `monitoring/survival_curves_daily.html`
+- Alerts: Slack #quant-alerts
+- Logs: `/var/log/survival_curves/`
+
+---
+
+## Team Contacts
+
+**Owner:** Quant Team  
+**Questions:** #quant-help on Slack  
+**Issues:** File ticket in JIRA (project: CREDIT)  
+**On-call:** Check PagerDuty schedule
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-04-13 | Initial wiki created from technical guide |
+
+---
+
+**Quick Start:** `python run_daily_batch.py --date 2026-04-13`
+
+**Documentation:** [Technical Guide](survival_curve_fitting_technical_guide.md) | [Waterfall](waterfall_methodology.md)
+
+**Status:** Production ✅
