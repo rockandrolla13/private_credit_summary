@@ -1,0 +1,297 @@
+Good. I now have the full Oaktree memo (Howard Marks, April 9, 2026). Let me identify what it adds uniquely before writing the combined wiki.
+
+**What Oaktree adds that Sona does not cover:**
+
+1. A formal taxonomy of bubble anatomy applied explicitly to direct lending — the 8-stage pattern from newness through disillusionment, with the specific observation that "what the wise man does in the beginning, the fool does in the end"
+2. The explicit credit innovation chronology (1970s–2020s) showing that each decade's credit innovation followed the same arc — this provides the structural context for why direct lending specifically followed the pattern it did
+3. The PE/direct lending symbiosis explained mechanically — and critically, the 400bp rate rise framing: "capital structures that didn't anticipate a 400bp increase in interest rates." This is the most precise formulation of the rate transmission problem
+4. The MSCI PE return data (2022–Q3 2025): annualised PE fund returns of 5.8% vs S&P 500 at 11.6% — the quantified underperformance that explains LP behaviour
+5. The "limiting factor is lenders' willingness" observation — credit market composition is supply-driven, not demand-driven. If you provide capital, it gets borrowed. This is the structural explanation for why the asset class overextended
+6. The 1929 structural parallel: three elements that created the Great Crash map precisely onto direct lending — retail investors without sophistication, heavy leverage, asset illiquidity mismatched with short-term financing
+7. The manager incentive dilemma stated with unusual candour — join the race to the bottom or sit out and lose clients during the interminable period before discipline pays off
+8. Oaktree's own positioning as a benchmark for discipline: direct lending only 20% of performing credit, 15% of total AUM, 80% institutional clients, software exposure "substantially less than peers"
+9. The 1980s/90s HY rhyme — same structure: new financial innovation, Middle East war, investor panic, but HY ultimately survived and improved. The resolution framing: direct lending will be fine, but must go through a credit cycle first
+
+---
+
+Now the combined wiki:
+
+---
+
+# Private Credit: The Stress Cycle
+### A Practitioner Synthesis — Sona Asset Management (March 2026) · Howard Marks / Oaktree (April 9, 2026)
+*For discussion only — not investment advice.*
+
+---
+
+## Contents
+
+1. [Why this happened: the bubble anatomy](#1-why-this-happened-the-bubble-anatomy)
+2. [The three phases of direct lending's development](#2-the-three-phases-of-direct-lendings-development)
+3. [The structural problems — what went wrong and why](#3-the-structural-problems--what-went-wrong-and-why)
+4. [The data that proves it](#4-the-data-that-proves-it)
+5. [The three case studies: First Brands, Tricolor, MFS](#5-the-three-case-studies-first-brands-tricolor-mfs)
+6. [The PE entanglement — why the two crises are one](#6-the-pe-entanglement--why-the-two-crises-are-one)
+7. [The 1929 structural parallel](#7-the-1929-structural-parallel)
+8. [What the current stress actually is — and is not](#8-what-the-current-stress-actually-is--and-is-not)
+9. [The manager incentive dilemma](#9-the-manager-incentive-dilemma)
+10. [What discipline actually looks like](#10-what-discipline-actually-looks-like)
+11. [The historical rhyme: direct lending as HY 1989](#11-the-historical-rhyme-direct-lending-as-hy-1989)
+12. [What comes next — the resolution path](#12-what-comes-next--the-resolution-path)
+13. [Sources](#13-sources)
+
+---
+
+## 1. Why this happened: the bubble anatomy
+
+Howard Marks identifies eight recurring features of every investment bubble. Direct lending followed all eight with near-textbook precision.
+
+**The essential element is newness.** When something is new, its proponents can stimulate interest by touting its merits and its flaws have yet to come to light. This is the necessary condition for a bubble. Direct lending was genuinely new — a form of credit that had never been tested through a full cycle when the bulk of capital flooded in from 2015 to 2022.
+
+**There is usually a grain of truth.** The core thesis for lending to PE-backed software companies was real: recurring subscription revenues, low capital intensity, sticky customers, and the scarcity of bank capital post-GFC. The problem was not that the thesis was invented — it was that it was extrapolated far beyond the conditions under which it was valid.
+
+**Early investors were rewarded.** The first direct lenders in 2010–2016 commanded strong terms, high yields, robust covenants, and chose from a genuine scarcity of available capital. Their returns validated the thesis. This set the trap for everyone who came after.
+
+**Success made outsiders envious.** As Marks quotes Charles Kindleberger: "There is nothing so disturbing to one's well-being and judgment as to see a friend get rich." Institutional allocators who missed the early returns rushed to participate. This is the mechanism that converts a valid investment into an overcrowded one.
+
+**The inflaming of hope.** Possibility was confused with probability and then became certainty. Yields of 9–11%, Sharpe ratios above 1.0, apparent low volatility — all of it was real, but what most investors failed to ask was whether those results would persist at the terms and prices available in 2021.
+
+**The critical question was not asked.** "What price is safe to pay?" At the peak of the cycle, investors in 2021-vintage deals were lending at 8× leverage to ARR-model software companies at near-zero rates, effectively lending against a business model that had never been tested. Nobody asked whether those terms were safe, because nobody had to — the deals had always worked.
+
+**Latecomers lowered standards.** The arrival of hundreds of new direct lending managers and several trillion dollars of incremental capital caused lenders to compete by accepting lower yields, narrower spreads, and reduced structural protections. The most important adage in investing, in Marks's formulation: "What the wise man does in the beginning, the fool does in the end." Or in Buffett's version: first the innovator, then the imitator, then the idiot.
+
+**Flaws come to light.** The flaws overlooked during the good times — opacity, illiquidity, structurally low secondary market depth, originator incentives misaligned with portfolio quality, and the untested resilience of SaaS revenues — are now coming to light simultaneously.
+
+This is not a novel story. It is the eternal recurrence of a pattern Marks has observed across high yield bonds in the 1980s, subprime mortgages in the 2000s, and direct lending today.
+
+---
+
+## 2. The three phases of direct lending's development
+
+Sona identifies three discrete phases in the market's evolution, which map precisely onto the generic bubble arc Marks describes.
+
+**Phase 1: The Middle Market Foundation (2010–2016)**
+
+Banks retreated from leveraged middle-market lending under Basel III capital requirements and the LCR. The first direct lenders stepped into the genuine vacuum, financed at mid-single-digit leverage, with spreads of 600–800bp over base rates and deal sizes rarely exceeding $500M. Returns genuinely compensated for the risks taken. Underwriting was disciplined because there was no competition forcing otherwise.
+
+The limiting factor in the credit market — as Marks emphasises — is never borrowers' appetite for capital. It is lenders' willingness to supply it. In this phase, lenders were few and selective. Borrowers accepted strong covenants and paid genuine illiquidity premiums.
+
+**Phase 2: The Institutionalisation (2016–2021)**
+
+As performance data accumulated, institutional capital — pension funds, insurance companies, sovereign wealth funds — sought alternatives to low-yielding public markets and entered at scale. Deal sizes increased. Documentation began to loosen. Insurance companies seeking duration and yield became structural buyers, and this influx of permanent capital created something Sona identifies as a critical structural problem: insurance capital faces permanent deployment pressure, a liability structure that must continuously generate matching assets. This dynamic closely resembles the GP deployment incentive problem but at a scale that dwarfs any individual fund. The result was persistent spread compression precisely when spreads should have been widening to reflect higher risk.
+
+**Phase 3: The Mass Market Era (2021–present)**
+
+The rate reset of 2022 made private credit acutely attractive to yield-hungry capital. BDC structures opened the asset class to retail investors. Non-traded perpetual BDCs grew from zero in 2021 to more than $200B in AUM. Semi-liquid vehicles now represent approximately a third of the $1T US direct lending market. The five largest private credit managers grew AUM by 174% between 2020 and 2025 to more than $2T.
+
+The retail participation is the element that most directly parallels Marks's 1929 analysis. Individual investors were lured in after an ascent that had gone on for years, given instruments they did not fully understand, with leverage that was described as profit-enhancing but whose downside was not clearly explained, and with liquidity terms that may have been glossed over with a representation that "most of the time, you'll probably be okay."
+
+---
+
+## 3. The structural problems — what went wrong and why
+
+Both Sona and Marks identify the same set of structural problems from different analytical angles. Together they provide a more complete picture than either alone.
+
+**The originate-not-manage culture (Sona)**
+
+The private credit industry was designed to originate. Its fee structures, staffing models, GP incentives, and fundraising narratives are all oriented around deployment. The implicit assumption embedded in the business model is that the most important decisions are made at origination and that monitoring can be largely mechanical thereafter. Sona argues this assumption is wrong.
+
+As a result, many private credit portfolios were not constructed — they emerged as the accumulation of individual deployments. A genuine portfolio management culture requires continuous reassessment: whether the thesis on which an investment was underwritten remains valid, whether the competitive position of the borrower has changed, whether covenant levels still reflect the underlying risk, and crucially, the willingness and ability to walk away from an investment when circumstances call for it.
+
+The concentration evidence supports the critique: why would a well-managed portfolio manager tolerate 40–50% exposure to software that was already showing signs of AI-driven competitive pressure? The answer lies in incentive structures. Managers who deployed capital most aggressively were rewarded with the highest fees and the largest subsequent fundraises.
+
+**The lender willingness problem (Marks)**
+
+Marks frames this differently but arrives at the same conclusion. The composition of the credit market is determined by lenders' willingness to supply capital, not by borrowers' needs. When hundreds of new direct lending managers entered the market with $2T of capital to deploy, the mathematics of competition required them to lower their standards. The benign economic environment that generally prevailed for 17 years post-GFC made direct loans successful despite weakening underwriting standards, allowing those trends to become more pronounced.
+
+The manager incentive dilemma is real and Marks acknowledges it with unusual candour: join in when feverish investors are lowering their standards in order to put money to work, or sit on the sidelines and not invest, watching as other managers pile up AUM while clients potentially close their accounts in the interminable period before discipline finally pays off. This is not a criticism of individual managers but an observation about the structural incentive. The market rewards acceleration during the boom and punishes restraint.
+
+**The convexity problem (Sona)**
+
+Credit investing is inherently asymmetric in a way equity investing is not. The worst outcome is a total loss. Unlike equities, the best outcome is par — investors get their money back plus coupon income. There is no participation in the upside. In software specifically, private credit lenders accepted the downside risk of disruption while having no exposure to the equity upside if AI augmentation made software companies more valuable. The companies that were the most attractive private credit borrowers — high-leverage, ARR-model SaaS — are also the most exposed to AI disruption risk. The asymmetry is at its most extreme exactly where the concentration is highest.
+
+**The 60% asset-light problem (Sona)**
+
+Software at 26% of BDC portfolios is the acute risk, but Sona widens the aperture materially. Approximately 60% of BDC portfolios consist of asset-light businesses broadly defined — software, financial services, business process outsourcing, and any company whose competitive advantage rests primarily on human capital rather than hard assets. The comparative figures: €-HY at 16%, $-HY at 25%, €-BSL at 40%, $-BSL at 46%, BDCs at 58%. The AI disruption thesis is not a software story. It is an asset-light story, and asset-light is the majority of the BDC universe.
+
+**The duration trap (Sona)**
+
+The original investment thesis was built on a liquidity premium: investors accepted illiquidity in exchange for higher returns on the assumption that capital would be returned over a defined fund life. The reality has been different. Less than 1% of private credit AUM trades annually in the secondary market. Bain's 2026 Global Private Equity Report documents the PE side of this: buyout distributions as a percentage of NAV held at 14% for four consecutive years — the lowest since the GFC — with 32,000 unsold companies worth $3.8T sitting on GP books. Average holding periods at exit have extended to seven years from a historical five to six.
+
+The duration trap interacts with AI disruption in a specific way. A private credit investor exposed to a deteriorating software company has almost no exit routes. They watch NAV drift further from economic reality while hoping a restructuring preserves some value.
+
+---
+
+## 4. The data that proves it
+
+These are not theoretical concerns. They have specific public evidence.
+
+**The shadow default rate**
+
+Lincoln International monitors 7,000 company valuations across 225+ asset managers globally. Their data is the most granular public read on private credit stress. The officially reported default rate remains around 3.4%. But Lincoln's shadow default rate — the percentage of companies using PIK that was inserted mid-deal rather than agreed at origination — has more than doubled from 2.5% of all deals in Q4 2021 to 6.4% in Q4 2025. PIK usage overall has risen to 11% of all deals, up from 7% in 2021, and 58% of current PIK deals had no PIK provision at origination. A mid-deal PIK insertion is a de facto admission that the borrower cannot service cash interest — which is a shadow default in economic substance even if not in legal form.
+
+The structural implication: the 6.4% shadow default rate and the 3.4% reported rate are not measuring the same thing. The gap is where the real risk sits.
+
+Additional Lincoln data corroborates the stress. The average LTV for companies with bad PIK was 45% at inception compared to 83% today — a clear sign of borrower balance sheet deterioration. In 2025, Lincoln observed lenders with $21B of pre-takeover principal gaining control of businesses — more than the total from 2019 through 2024 combined.
+
+**The 2021 vintage concentration**
+
+Goldman Sachs Asset Management built a proprietary database of European credit events (insolvencies and debt-for-equity swaps in direct lending) since 2017. Their finding: 2021-vintage deals have seen the steepest trajectory in the number of credit events experienced in the first three years after origination. The 2017–2018 vintage has the highest absolute count (it had to survive COVID, Ukraine, and rate rises), but the 2021 vintage is accelerating fastest. This vintage is particularly vulnerable because loans were structured for a near-zero rate environment and the borrowers had not yet grown EBITDA enough to offset the 400bp rate rise before their ICR came under pressure.
+
+**The repeat default problem**
+
+Fitch estimates that 30% of defaults recorded in European bond and loan markets in 2025 were repeat defaults — companies defaulting for a second time within two years of their initial default. That is up from 15% in 2024 and 13% in 2023. Repeat defaulters accounted for 32% of European HY defaults in 2025, with the average interval between the first and second default at eight months for HY and eleven months for leveraged loans. Fitch's interpretation: LMEs can "buy time but often leave balance sheets stretched." The restructuring frequently removes too little debt to restore genuine solvency, setting up a second event. At the start of 2026, 43% of CCC/C issuers in Europe were previous defaulters, up from 16% at the start of 2020.
+
+This is the strongest available public evidence that the recovery rate assumption is more fragile than the MS central case implies. A bilateral LME that leaves 8× leverage on a SaaS company that is simultaneously facing AI disruption does not produce recovery — it produces a second default 8–11 months later.
+
+**The PE distribution drought**
+
+Bain's 2026 Global PE Report documents distributions as a percentage of NAV at 14% for four consecutive years — the lowest since 2008–09. The PE industry holds 32,000 unsold companies worth $3.8T with average holding periods of seven years. Marks adds the return data: MSCI estimates US PE funds saw annualised returns of 5.8% between 2022 and Q3 2025 versus 11.6% for the S&P 500. This matters for private credit because PE exits are the primary mechanism through which portfolio company debt gets repaid. If companies cannot be sold, maturities cannot be repaid through asset monetisation, forcing borrowers toward refinancing or restructuring at exactly the moment when private credit supply is contracting.
+
+---
+
+## 5. The three case studies: First Brands, Tricolor, MFS
+
+These three failures are not peripheral. They are illustrative of a structural weakness in how private credit and asset-based finance were underwritten during the expansion phase.
+
+**First Brands Group (September 2025)**
+
+First Brands entered 2025 carrying more than $10B in total debt and roughly $900M in annual interest obligations, the legacy of an aggressive roll-up strategy in aftermarket auto parts. When tariff headwinds compressed operating cash flow, the capital structure unravelled. Beneath the liquidity crisis lay something structural: approximately $2.3B in receivables had allegedly been diverted through commingling and overlapping facilities, with a Department of Justice inquiry focused on duplicate pledging and the accuracy of borrowing-base certificates. Lenders owned receivables on paper but did not control the incoming cash because retailers were remitting payments into accounts controlled by the company rather than into DACA-governed accounts.
+
+**Tricolor Holdings (September 2025)**
+
+Tricolor operated as a vertically integrated used-car dealer and subprime auto lender. The vulnerability was the fragmentation of state-level vehicle title infrastructure. Tricolor pledged the same consumer auto-loan portfolios to multiple financing partners while maintaining internal ledgers that could not be reconciled across facilities — creating a collateral position that existed in documentation but not in practice. The company ultimately filed directly for Chapter 7, bypassing reorganisation.
+
+**Market Financial Solutions (February 2026)**
+
+MFS built a £2.4B loan book in specialist UK property finance over nearly two decades, receiving a clean audit as recently as March 2025. The trigger: across loans totalling £1.2B, only £230M of verified collateral could be identified. The mechanism was double-pledging — the same properties were used to secure multiple separate loans from different lenders, each of whom believed they held exclusive security. MFS operated ten warehouse facilities simultaneously, with each lender managing a purely bilateral relationship with MFS as servicer and no visibility across the wider structure. No independent party monitored aggregate exposure. The founder left for Dubai following the allegations of fraud. Barclays held £600M of exposure; Elliott Management £200M. AlixPartners were appointed administrators.
+
+**The common thread**
+
+In all three cases, the borrower acted as its own servicer, controlled the collection accounts, and provided the data on which lenders relied to assess their own exposure. Facilities that appeared secured and self-liquidating on paper depended in practice on the integrity of the party under the greatest financial stress. Building genuine control infrastructure requires meaningful operational effort. Relying on trust where control is possible carries a cost that is now becoming very clear.
+
+Sona's conclusion — "this was avoidable" — is confirmed by legal commentary following the MFS collapse. Independent collateral verification, origination exclusivity, and control of the servicing function were all available structural protections that were not taken, primarily because competitive pressures and deal velocity had led participants to move away from these practices during the expansion phase.
+
+Jamie Dimon put it bluntly in February 2026: "I see a couple of people doing some dumb things in private credit markets." The "cockroach theory" — that one visible problem usually signals others hiding nearby — has become the unofficial framing for what comes next.
+
+---
+
+## 6. The PE entanglement — why the two crises are one
+
+Marks makes the most important structural connection that is often treated as background context: private credit and private equity are not parallel crises. They are the same crisis viewed from two sides of the capital structure.
+
+PE was born and grew to scale during a 40-year, 2,000bp decline in interest rates. The specific mechanism: falling rates increase the value of future cash flows (making portfolio companies worth more) and reduce the cost of borrowing (reducing the interest burden on LBO debt). PE firms that bought companies using borrowed money received a double bonus from the rate decline. This was the structural tailwind that made the industry look better than it was.
+
+When the Fed raised rates by 400bp between 2022 and 2023, Bruce Karsh's formulation was precise: "A lot of private equity companies have been saddled with capital structures that didn't anticipate a 400-basis point increase in interest rates." The consequences cascade mechanically:
+
+Higher interest costs made many portfolio companies less profitable. Higher rates meant higher interest bills and lower coverage ratios, making it more difficult to refinance. Rising rates reduced the value to buyers of companies' future cash flows, lowering the prices at which portfolio companies can be sold. As sales slowed, distributions to PE LPs fell, making it harder for LPs to commit to new funds, further constraining the capital available for new investments.
+
+The PE stress transmits directly to private credit through four specific channels. PE is the primary borrower in direct lending — approximately 75% of direct loans are to PE-backed companies. PE's inability to sell portfolio companies is the primary mechanism by which maturities cannot be repaid at face value. PE's declining willingness to support portfolio companies through equity injections — documented by Lincoln in 2025 — is the mechanism by which bilateral LME recovery rates deteriorate from 75% to something lower. And PE's fundraising difficulties reduce the future demand for direct lending capital, compressing the AUM growth trajectory that justifies alt manager equity valuations.
+
+The MSCI PE return data Marks cites is stark: annualised returns of 5.8% versus 11.6% for the S&P 500 over 2022–Q3 2025. LP capital committed in expectation of the returns that justified the allocation is instead locked in vehicles that have underperformed public markets by 580bp per year for three years. This is the pressure that drives LP behaviour — redemption requests, reduced new commitments, rotation away from direct lending toward PE, infrastructure, and secondaries.
+
+---
+
+## 7. The 1929 structural parallel
+
+Marks draws a precise structural parallel between the conditions that created the Great Crash of 1929 and the conditions prevailing in direct lending today. Three elements were primarily responsible for the 1929 bubble:
+
+**The sale of stock to the public without regard for suitability.** Individual investors were lured into a market whose risks they did not understand after an ascent that had gone on for years. The promoters were eager for commissions and not focused on suitability.
+
+**The provision of heavy leverage to the buyers.** Margin loans for up to 90% of the purchase price were available. Leverage was touted as profit-enhancing; the downside risk was often omitted from the sales pitch.
+
+**The mismatch between asset illiquidity and the short-term nature of the loans.** Margin debt could be called if a decline wiped out the equity cushion and additional cash couldn't be posted. The perhaps-unmentioned terms of margin debt exposed investors to the risk of ruin.
+
+The direct lending parallel:
+
+Individual investors placed in non-traded BDCs did not fully grasp the potential complications, especially since the instruments had never been tested in tough times. The inclusion of leverage in the vehicles — back leverage borrowed by the BDC against its loan portfolio — was described as capable of magnifying profits; the corresponding downside risk was often omitted from the sales pitch. And the investment vehicles' limitations on liquidity — which may have been glossed over with a representation that "most of the time, you'll probably be okay" — have come into play with surprising effect.
+
+Marks's conclusion: it is not easy to lose everything in the stock market or in credit, but the combination of these three elements can do the trick in a bad-enough boom/bust cycle. The institutional question — whether the redemption gates will hold and whether the bilateral LME advantage will produce the 70–80% recovery rates MS projects — determines whether this is a contained cycle or something more serious.
+
+---
+
+## 8. What the current stress actually is — and is not
+
+Both Sona and Marks are precise about what the current stress represents. Neither believes the private credit market is on the brink of systemic collapse.
+
+Marks's internal memo (from colleagues Armen, Bob, and Craig) is explicit: "While these software companies are generally performing well with a few outliers, there has been a growing concern in the market that they are at risk of significant disruption from AI, which has materially impacted their equity value and reduced the equity cushion for lenders. Today, investors are not discriminating between the potential winners and losers in the software space, and the entire sector is under pressure. The disruptions and headlines are largely flow- and sentiment-driven rather than the result of credit deterioration."
+
+Sona is more cautious than Marks but agrees on the direction: "A significant portion of private credit portfolios is likely to face a prolonged period of weaker outcomes. The reason is not a single catalyst, but the convergence of several structural forces — rising disruption risk, weaker underwriting from recent vintages, and capital that is harder to exit. Each of these pressures might be manageable on its own. Taken together, they create an environment of far greater uncertainty."
+
+Both sources converge on the same framing: this is a cycle, not a systemic event. Capital is largely locked up, avoiding the kind of forced liquidation dynamics that accelerated the GFC. The structural features of semi-liquid vehicles are functioning as intended. The question is not whether the system survives — it will — but which managers, which vehicles, and which vintages survive well.
+
+The critical distinction both sources draw: the current weakness in publicly traded BDCs and alt manager stocks is primarily sentiment-driven, not fundamental-driven. Investors are rarely the informed, methodical, dispassionate weighing machines Benjamin Graham and David Dodd described. In real life, things fluctuate between pretty good and not so hot; in the minds of investors, they go from flawless to hopeless. The swings between these states create the asymmetric opportunities that distinguish intelligent credit investors from the rest.
+
+---
+
+## 9. The manager incentive dilemma
+
+Both sources address what is perhaps the most uncomfortable truth about the current situation: the managers who got into trouble were not necessarily negligent or dishonest. Many were responding rationally to the incentive environment they operated in.
+
+Marks's framing is the clearest: "What a choice for a manager: join in when feverish investors are lowering their standards in order to put money to work, or sit on the sidelines and not invest, watching as other managers pile up AUM, and likely causing clients to close their accounts in the seemingly interminable period before your skepticism and discipline finally pay off?"
+
+This is the structural explanation for why underwriting standards deteriorated across the industry, not just at one or two outlier managers. When the alternative to competing on price and terms is losing your client base, most managers compete. The ones who don't — Oaktree's AUM "only" doubled over the last decade versus 174% growth at the five largest managers — incur a real business cost during the expansion phase. The payoff for restraint comes during the correction, when better-priced opportunities emerge and capital flows toward managers with preserved reputations and conservative portfolios.
+
+Sona adds the portfolio management dimension to this. The discipline that matters is not just origination standards but ongoing willingness to recognise and exit bad decisions. Public credit managers have this discipline by default because prices are continuous and visible — a deteriorating bond is immediately observable in the secondary market, and a manager who fails to sell it before recovery deteriorates is penalised in performance reports. Private credit managers have no equivalent mechanism. There is no secondary market. PIK amendments preserve the par mark. The incentive is always to delay recognition and hope for recovery.
+
+The practical question for LP investors: which managers built portfolio management infrastructure commensurate with their origination capacity, and which built origination infrastructure and assumed monitoring could be largely mechanical? The answer to that question will determine returns over the next three to five years more than any macro variable.
+
+---
+
+## 10. What discipline actually looks like
+
+Oaktree's own positioning provides a specific benchmark for what conservative discipline looks like in practice, allowing comparison against industry averages.
+
+Direct lending is approximately 20% of Oaktree's performing credit investments and less than 15% of overall AUM. Software exposure across the entire credit platform is described as "extremely small on an absolute basis and relative to peers" — predominantly first-lien, with very little PIK. 80% of total investment in private credit is on behalf of institutional clients, meaning very little was placed with retail investors. Non-traded BDC AUM is just over $10B versus $40–50B at leading managers.
+
+Sona's implicit benchmark is different but consistent: the managers most likely to succeed will combine strict underwriting discipline with the flexibility to react to pricing dislocations between public and private credit markets. The critical capability Sona identifies is the willingness and ability to exit bad positions — which requires both continuous monitoring and access to secondary market instruments or hedging tools that most pure private credit managers do not possess.
+
+The practical implication for the period ahead: managers who stayed disciplined are now positioned to benefit from two dynamics simultaneously. First, investor scepticism has created better entry points — spreads are wider, documentation is tighter, and borrower quality is higher as the most aggressive lenders withdraw. Second, distressed opportunities are emerging in portfolios of less disciplined managers, offering the kind of entry point that only appears after a cycle has turned.
+
+---
+
+## 11. The historical rhyme: direct lending as HY 1989
+
+Bob O'Leary, writing to Marks, makes the most useful forward-looking analogy in either document:
+
+"It strikes me that there are interesting parallels between credit markets today and the late 1980s/early '90s, when you and Bruce started the first Special Credits funds. Back then, there was a new financial innovation (high yield bonds) that many investors had over-indulged in. The market suddenly got spooked by a war in the Middle East, and investors couldn't dump high yield fast enough. Substitute direct lending for high yield and add an element of technological creative destruction, and you have some of the same dynamics (including another war in the Middle East sparking fears of recession). Ultimately, high yield was fine (even great), and direct lending will be as well, but it may have to go through a credit cycle to get to a better place."
+
+The HY parallel is instructive precisely because HY did survive and improve. The late 1980s saw the collapse of Drexel Burnham, a wave of LBO-related defaults, and widespread investor disillusionment with the junk bond market. Returns on HY had been genuinely strong in the early years and then eroded as capital flooded in and standards fell, exactly as Marks's bubble pattern predicts. The resolution was not the elimination of the asset class — it was a repricing, a shakeout of weaker managers, a tightening of underwriting standards, and ultimately the creation of a more mature, better-functioning market that has served investors well for 30+ years.
+
+The three differences in the current situation that Sona highlights as potentially making this cycle harder than HY 1989: the retail capital in non-traded vehicles creates redemption dynamics that BSL and HY did not have; the 60% asset-light exposure means recovery values are structurally more uncertain; and the originate-not-manage culture, if it persists, means the cycle will expose more problems than a simple repricing would fix.
+
+The three factors that make resolution more likely than catastrophe: capital is largely locked up and gates are functioning, preventing the fire-sale dynamics that created systemic contagion in 2008; banks are not the primary holders of the risk and their look-through LTV provides substantial structural protection; and the bilateral LME structure, for the well-managed portfolios at least, enables soft restructurings that preserve value rather than destroying it.
+
+---
+
+## 12. What comes next — the resolution path
+
+Both sources converge on a resolution path with common features, though they differ on timing and severity.
+
+The near-term catalyst is the May 2026 Q1 BDC filings. These will be the first marks incorporating all three stresses simultaneously — the Iran-driven rate shock, AI disruption of software revenues, and Q1 2026 SaaS earnings. If PIK stays below 10% and ICR remains above 1.7×, the unverifiability premium that currently dominates BDC NAV discounts will compress rapidly. If marks deteriorate materially, the fundamental credit loss estimate grows. Either way, this is the information event that resolves the binary.
+
+The medium-term dynamic is a repricing and consolidation. Sona: the market will emerge stronger once the excesses of past cycles have washed away. Dispersion in returns will reveal a great deal about the skill and credibility of private credit managers. Some will thrive, some will survive, and some will no longer be active. Marks: investor scepticism is likely to give rise to investment opportunities that are much better than those passed up in the period just ended. Staying disciplined and resisting the latest fads is not the route to short-term maximisation, but it is essential for the excellence in investing that the best managers seek.
+
+The long-term structural shift, on which both are clear, is toward integrated public-private credit management. Sona's "if you don't do both, you should not do either" is the practitioner formulation. Marks's lifetime of moving between public and private credit through cycles — always insisting there was a place in portfolios for both — is the proof of concept. The managers who succeed in the next decade will be those with the ability to move across the full credit spectrum as dislocations emerge, using public market price discovery to stress-test private marks, and deploying in both markets as relative value dictates.
+
+The winners are already identifiable: managers with low software and asset-light exposure, high institutional capital ratios, robust portfolio management infrastructure, cross-market origination capability, and distressed funds positioned to deploy in H2 2026–2028 as the software maturity wall forces cash settlements. The losers are already identifiable too: managers with high retail capital ratios, concentrated software exposures, origination-only cultures, and non-traded BDCs facing sustained redemption pressure.
+
+The cycle will run. Direct lending will, as O'Leary and Marks believe, ultimately be fine — even great. But it will have to earn that outcome by going through a credit cycle that exposes the flaws that were overlooked during the years when everything was going well. That is not a counsel of despair. It is the eternal pattern.
+
+---
+
+## 13. Sources
+
+| Source | Character | Key contributions |
+|---|---|---|
+| **Howard Marks / Oaktree Capital — "What's Going on in Private Credit?" (April 9, 2026)** | Practitioner, cycle veteran, explicit about own positioning | Bubble anatomy applied to direct lending; credit innovation chronology; PE/direct lending symbiosis; 400bp rate rise framing; MSCI PE return data; lender willingness as supply driver; 1929 structural parallel; manager incentive dilemma; HY 1989 resolution rhyme |
+| **Sona Asset Management — "Private Credit: An Honest Assessment" (March 2026)** | Active cross-market credit investor, integrated public/private | 60% asset-light exposure; Lincoln bad PIK data (58% mid-deal, 6.4% shadow default); originate-not-manage culture critique; MFS double-pledging case study; duration trap with DPI data; repeat default data; European 2028 maturity wall; integrated credit mandate thesis |
+| **Lincoln International Private Market Index (Q4 2025, Q2 2025)** | Third-party valuation, 7,000 companies, 225+ managers | Shadow default rate 6.4%; bad PIK 58%; covenant defaults 3.4%; LTV expansion on bad PIK from 45% to 83%; $21B lender takeovers in 2025 |
+| **Goldman Sachs Asset Management — European Private Credit (March 2026)** | GP with own direct lending platform | 2021 vintage steepest credit event trajectory; 2017–18 vintage highest absolute count; proprietary credit events database |
+| **Bain & Company Global PE Report 2026 (February 2026)** | Annual industry benchmark | Distributions/NAV at 14%, GFC low, four consecutive years; 32,000 unsold companies worth $3.8T; seven-year average holding periods; DPI benchmarks by vintage |
+| **Fitch Ratings / PitchBook (March 2026)** | Rating agency data | Repeat defaults 30% of European defaults in 2025, up from 15% in 2024; 43% of CCC issuers are previous defaulters; average re-default interval 8–11 months |
+| **Bloomberg / Court Documents — MFS (February–March 2026)** | Court filings, Bloomberg News | £930M collateral shortfall; double-pledging confirmed; Barclays £600M, Elliott £200M exposure; founder left UK; AlixPartners administrators |
+
+---
+
+*April 2026. These documents do not constitute investment advice. Oaktree, Sona, Goldman Sachs, Lincoln, Bain, and Fitch are independent sources cited for analytical purposes only.*
